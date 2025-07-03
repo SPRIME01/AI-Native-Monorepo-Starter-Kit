@@ -17,7 +17,7 @@ We've integrated a modern Python toolchain (`uv`, `ruff`, `mypy`, `pytest`, `pye
       * **`mypy`** (or Pyre): Strict static type checking for Python.
       * **`pytest`**: Robust testing framework with coverage.
       * **`pyenv`**: Seamless Python version management.
-  * **Automated Setup:** A single `make setup` command handles environment bootstrapping, Nx plugin generation, and pre-commit hook installation.
+  * **Automated Setup:** A single `make setup` command orchestrates environment bootstrapping, Nx plugin generation, and pre-commit hook installation, with core logic now implemented in Python for cross-platform reliability.
   * **Simplified Project Generation:** Use `make app` and `make lib` for instantly configured Python applications and libraries.
   * **Intelligent Task Execution:** Leverages Nx's affected commands for fast, incremental linting, testing, and building across your monorepo.
   * **Pre-commit Hooks:** Enforces code quality locally before commits, preventing CI failures.
@@ -42,15 +42,76 @@ Before you clone and conquer, ensure you have these essentials installed:
 
 Follow these steps to get your AI-Native Monorepo up and running:
 
-1.  **Clone the Repository:**
+### 📋 Step 1: Create Your New Project
+
+1.  **Clone this project template:**
 
     ```bash
-    git clone https://github.com/your-username/your-ai-monorepo-starter.git # Replace with your repo URL
-    cd your-ai-monorepo-starter
+    git clone https://github.com/SPRIME01/AI-Native-Monorepo-Starter-Kit.git <new_project_directory_name>
     ```
 
+    This pulls down the template and initializes it as a Git repository, still linked to the original.
+
+2.  **Navigate into the New Project Directory:**
+
+    ```bash
+    cd <new_project_directory_name>
+    ```
+
+3.  **Delete the `.git` Folder:**
+
+    This step is crucial to break the link with the original template repository, allowing you to start fresh with your own project history.
+    
+    **If you're on macOS/Linux, run:**
+    ```bash
+    rm -rf .git
+    ```
+    **If you're on Windows, use PowerShell:**
+    ```powershell
+    Remove-Item -Recurse -Force .git
+    ```
+
+    Your project is now just a plain directory with files, no longer a Git repository. This is where your new, independent project truly begins.
+
+4.  **Initialize a New Git Repository:**
+
+    ```bash
+    git init
+    ```
+
+    Now, Git sees this as a brand new, empty repository. No history, no remote connections yet.
+
+5.  **Add Your Files to the New Repository:**
+
+    ```bash
+    git add .
+    ```
+
+    This stages all your template files (which are now your new project's files) for the first commit.
+
+6.  **Make Your Initial Commit:**
+
+    ```bash
+    git commit -m "Initial commit for new project based on template"
+    ```
+
+    This creates the very first commit for *your new project's unique history*.
+
+7.  **Link to a New Remote (e.g., GitHub/GitLab/etc.):**
+    If you're going to host this new project online, create an *empty* repository on your chosen platform (GitHub, GitLab, etc.). Then, link your local repo to it:
+
+    ```bash
+    git remote add origin <url_to_your_new_empty_remote_repo>
+    git branch -M main # Or 'master' if you prefer, but 'main' is the modern default
+    git push -u origin main
+    ```
+
+    This pushes your new project's initial commit to its own dedicated remote.
+
+### ⚙️ Step 2: Setup Your Development Environment
+
 2.  **Run the One-Time Setup:**
-    This `make` command automates everything: Nx initialization, Python environment setup (pyenv, uv), custom Nx generator creation, and pre-commit hook installation.
+    This `make` command automates everything, leveraging a Python script (`scripts/setup.py`) for cross-platform compatibility: Nx initialization, Python environment setup (pyenv, uv), custom Nx generator creation, and pre-commit hook installation.
 
     ```bash
     make setup
@@ -180,5 +241,3 @@ Here's how to interact with your monorepo for daily development:
 ## 🤝 Contributing
 
 This is designed as a personal starter kit, but feedback or suggestions for improvements are always welcome\!
-
------
