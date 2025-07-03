@@ -63,16 +63,16 @@ setup: init-nx init-python-env install-custom-py-generator install-pre-commit
 	@echo "🚀 Monorepo setup complete! Run 'make help' for available commands."
 
 init-nx:
-	@bash ./.make_assets/setup_helper.sh init_nx $(NX_PYTHON_PLUGIN_VERSION)
+	@python scripts/setup.py init_nx --nx-python-plugin-version=$(NX_PYTHON_PLUGIN_VERSION)
 
 init-python-env:
-	@bash ./.make_assets/setup_helper.sh init_python_env $(PYTHON_VERSION) $(RUST_TOOLCHAIN_UV_INSTALL) $(ROOT_PYPROJECT_TOML) $(MONOREPO_ROOT)
+	@python scripts/setup.py init_python_env --python-version=$(PYTHON_VERSION) --rust-toolchain-uv-install=$(RUST_TOOLCHAIN_UV_INSTALL) --root-pyproject-toml=$(ROOT_PYPROJECT_TOML) --monorepo-root=$(MONOREPO_ROOT)
 
 install-custom-py-generator:
 	@bash ./.make_assets/setup_helper.sh install_custom_py_generator $(CUSTOM_PY_GEN_PLUGIN_NAME)
 
 install-pre-commit:
-	@bash ./.make_assets/setup_helper.sh install_pre_commit
+	@python scripts/setup.py install_pre_commit
 
 
 # ==============================================================================
