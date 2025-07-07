@@ -1,0 +1,1 @@
+{ "name": "invoicing-api", "root": "apps/invoicing-api", "projectType": "application", "tags": ["scope:invoicing", "type:api"], "targets": { "serve": { "executor": "@nx/python:run", "options": { "module": "src.main" } } } }

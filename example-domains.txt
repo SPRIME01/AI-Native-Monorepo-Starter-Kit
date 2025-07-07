@@ -1,0 +1,10 @@
+# Example domain configuration for hexagonal architecture
+# Edit this file to define your business domains
+# Lines starting with # are ignored
+
+allocation
+payments
+invoicing
+inventory
+shipping
+analytics

@@ -1,0 +1,1 @@
+{ "name": "payments-api", "root": "apps/payments-api", "projectType": "application", "tags": ["scope:payments", "type:api"], "targets": { "serve": { "executor": "@nx/python:run", "options": { "module": "src.main" } } } }

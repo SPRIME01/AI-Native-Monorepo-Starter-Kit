@@ -61,7 +61,7 @@ Follow these steps to get your AI-Native Monorepo up and running:
 3.  **Delete the `.git` Folder:**
 
     This step is crucial to break the link with the original template repository, allowing you to start fresh with your own project history.
-    
+
     **If you're on macOS/Linux, run:**
     ```bash
     rm -rf .git
@@ -125,6 +125,35 @@ Follow these steps to get your AI-Native Monorepo up and running:
 ## ⚡ Daily Workflow
 
 Here's how to interact with your monorepo for daily development:
+
+### 🏗️ Hexagonal Architecture Scaffolding
+
+This starter kit supports rapid scaffolding of hexagonal (ports & adapters) architecture:
+
+  * **Generate complete workspace structure:**
+    ```bash
+    make scaffold
+    # Creates apps and domain libraries based on APPS and DOMAINS lists in Makefile
+    ```
+
+  * **View current workspace structure:**
+    ```bash
+    make tree
+    # Pretty-prints the directory tree with intelligent filtering
+    ```
+
+  * **Clean generated structure (use with caution!):**
+    ```bash
+    make clean-scaffold
+    # Removes generated apps/, libs/, docker/ directories
+    ```
+
+  * **Customize your architecture:**
+    Edit the `APPS` and `DOMAINS` lists in the Makefile:
+    ```makefile
+    APPS := allocation-api payments-api invoicing-api
+    DOMAINS := allocation payments invoicing inventory shipping analytics
+    ```
 
 ### 🆕 Project Generation
 
@@ -216,6 +245,57 @@ Here's how to interact with your monorepo for daily development:
     make containerize PROJECT=my-fastapi-service
     ```
     *Requires a `Dockerfile` in the project's root and a `container` target in its `project.json`.*
+
+-----
+
+## 🎯 Domain-Driven Development
+
+This starter kit supports domain-driven architecture with specialized commands for organizing code by business domains:
+
+  * **Create a single domain library:**
+    ```bash
+    make domain-lib DOMAIN=allocation NAME=api TYPE=application
+    make domain-lib DOMAIN=payments NAME=models TYPE=core TAGS=entity,aggregate
+    ```
+
+  * **Create libraries for multiple domains at once:**
+    ```bash
+    make batch-domains DOMAINS=allocation,payments,invoicing TYPE=application SUFFIX=service
+    ```
+
+  * **Generate full microservice stack for a domain:**
+    ```bash
+    make domain-stack DOMAIN=allocation
+    # Creates: allocation-api, allocation-models, allocation-database, allocation-shared
+    ```
+
+  * **Pre-configured domain stacks:**
+    ```bash
+    make allocation-stack
+    make payments-stack
+    ```
+
+  * **Domain-specific operations:**
+    ```bash
+    # List all projects in a domain
+    make list-domain DOMAIN=allocation
+
+    # Run tasks by domain
+    make lint-domain DOMAIN=payments
+    make test-domain DOMAIN=invoicing
+    make build-domain DOMAIN=allocation
+
+    # Visualize domain dependencies
+    make graph-domain DOMAIN=payments
+    ```
+
+  * **Batch domain generation from file:**
+    ```bash
+    # Create domains.txt with your domain list
+    ./scripts/generate-domains.sh domains.txt
+    # Or on Windows:
+    .\scripts\generate-domains.ps1 -DomainsFile domains.txt
+    ```
 
 -----
 

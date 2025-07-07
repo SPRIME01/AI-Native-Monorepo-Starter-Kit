@@ -1,0 +1,24 @@
+{
+  "cli": "nx",
+  "title": "Generate libraries for multiple domains",
+  "type": "object",
+  "properties": {
+    "domains": {
+      "type": "string",
+      "description": "Comma-separated domain names (e.g., allocation,payments,invoicing)",
+      "x-prompt": "Enter comma-separated domain names"
+    },
+    "type": {
+      "type": "string",
+      "description": "Library type for all domains",
+      "enum": ["application", "core", "infrastructure", "shared"],
+      "default": "application"
+    },
+    "suffix": {
+      "type": "string",
+      "description": "Suffix for library names",
+      "default": "service"
+    }
+  },
+  "required": ["domains"]
+}

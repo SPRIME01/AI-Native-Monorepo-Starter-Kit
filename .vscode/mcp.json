@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@upstash/context7-mcp",
+        "--key",
+        "cc369a4a-eaf7-47a4-b6ba-61fae9e9e628",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    }
+  }
+}
