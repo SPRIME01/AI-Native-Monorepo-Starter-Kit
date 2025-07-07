@@ -299,6 +299,35 @@ This starter kit supports domain-driven architecture with specialized commands f
 
 -----
 
+## 🧩 MECE-Driven Domain Generation
+
+This project supports MECE-driven, category-based domain and project generation for maximum flexibility and business alignment.
+
+### How to Use
+
+1. **Create MECE lists** for your new domain in `project-definitions/<your-domain>/` (see `docs/mece-driven-domain-generation.md` for details).
+2. **Run the Makefile target:**
+
+   ```bash
+   make generate-domain NAME=<your-domain>
+   ```
+
+   This will generate all code and structure for your domain, using your MECE lists.
+
+3. **Review and customize** the generated code in `libs/<your-domain>/`, `apps/`, `tools/`, and `docker/` as needed.
+
+### Example
+
+To generate a domain called `order-management`:
+
+```bash
+make generate-domain NAME=order-management
+```
+
+See `docs/mece-driven-domain-generation.md` for full documentation and best practices.
+
+-----
+
 ## 🧹 Cleanup
 
   * **Clean build artifacts and caches:**

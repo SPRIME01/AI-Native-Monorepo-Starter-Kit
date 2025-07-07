@@ -15,8 +15,8 @@
 - [x] Clean existing structure and regenerate
 - [x] Generate enhanced apps with proper FastAPI structure
 - [x] Generate enhanced domains with hexagonal patterns
-- [ ] Create domain entities and services
-- [ ] Test new hexagonal structure
+- [x] Create domain entities and services
+- [x] Test new hexagonal structure
 
 ## 📋 Phase 3: Core Domain Implementation
 - [ ] Allocation domain: entities, services, ports

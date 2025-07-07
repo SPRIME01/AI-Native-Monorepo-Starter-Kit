@@ -710,3 +710,13 @@ help-domain:
 	@echo ""
 	@echo "  make tree"
 	@echo "    Display current workspace structure"
+
+# ==============================================================================
+# MECE-Driven Domain Generation
+# ==============================================================================
+
+generate-domain:
+	@sh -c 'if [ -z "$(NAME)" ]; then echo "Error: Please provide a domain name. Usage: make generate-domain NAME=order-management"; exit 1; fi'
+	@echo "🛠️ Generating domain structure for '$(NAME)' using MECE lists..."
+	python scripts/generate_domain.py $(NAME)
+	@echo "✅ Domain '$(NAME)' generated. See libs/$(NAME)/ and related folders."
