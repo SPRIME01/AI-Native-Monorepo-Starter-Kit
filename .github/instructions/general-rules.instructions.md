@@ -42,6 +42,27 @@ applyTo: "**"
 - Make reasonable assumptions instead of asking for permissions
 - Flag technical debt found and remediation applied
 
+## Workspace Management Rules
+
+- Use `docs/.temp/.scratchpad/` for temporary files during complex tasks (todo lists, scripts, analysis)
+- Create working documents to track progress on multi-step implementations
+- Break down complex requests into manageable chunks with clear milestones
+- Maintain context across tool calls by documenting decisions and state
+
+## Workflow Rules
+
+- For complex tasks, create a working plan in `.scratchpad/` before starting implementation
+- Use temporary scripts and automation tools when beneficial for efficiency
+- Track progress in markdown files to maintain context and avoid repetition
+- Clean up temporary files after task completion unless they provide ongoing value
+
+## Planning and Organization Rules
+
+- Before starting multi-file changes, create a plan document outlining the approach
+- Use `.scratchpad/` to prototype solutions and validate approaches
+- Document assumptions and decisions that affect implementation
+- Create reusable scripts for repetitive tasks
+
 ## Examples
 
 **Good**: Read file before editing

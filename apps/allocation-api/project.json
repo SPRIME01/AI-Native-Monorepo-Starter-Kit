@@ -1,1 +1,0 @@
-{ "name": "allocation-api", "root": "apps/allocation-api", "projectType": "application", "tags": ["scope:allocation", "type:api"], "targets": { "serve": { "executor": "@nx/python:run", "options": { "module": "src.main" } } } }

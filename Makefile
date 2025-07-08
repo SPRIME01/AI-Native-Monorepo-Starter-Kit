@@ -744,3 +744,12 @@ supabase-open:
 supabase-lint:
 	@echo "🔎 Linting SQL migrations with sqlfluff..."
 	python scripts/supabase_cli.py lint
+
+# AI Stack: Scaffold AI/ML dependencies for a domain
+ai-stack:
+	@if [ -z "$(DOMAIN)" ]; then \
+		echo "Error: Please provide a domain name. Usage: make ai-stack DOMAIN=mydomain"; exit 1; \
+	fi
+	@echo "🔎 Scaffolding AI stack for domain: $(DOMAIN)"
+	@node libs/shared-python-tools/scaffold_ai_stack.js $(DOMAIN)
+	@echo "✅ AI stack scaffolded for $(DOMAIN). See requirements/pyproject for suggested dependencies."
