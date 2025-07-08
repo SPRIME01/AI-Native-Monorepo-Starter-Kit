@@ -1,0 +1,10 @@
+provider: "local"  # local, otel, google-cloud, aws, azure, datadog
+tracing:
+  enabled: true
+  exporter: "jaeger"  # jaeger, zipkin, otlp
+metrics:
+  enabled: true
+  exporter: "prometheus"
+logging:
+  level: "info"
+  format: "json"

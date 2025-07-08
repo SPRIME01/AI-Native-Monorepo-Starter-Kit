@@ -745,6 +745,52 @@ supabase-lint:
 	@echo "🔎 Linting SQL migrations with sqlfluff..."
 	python scripts/supabase_cli.py lint
 
+supabase-vector-migrate:
+	@echo "Applying vector table migration to Supabase..."
+	@supabase db remote commit -f libs/shared/vector/sqlmodel/migrations/001_create_vectors_table.sql
+
+supabase-vector-seed:
+	@echo "Seeding Supabase vector table with example data..."
+	@python libs/shared/vector/sqlmodel/seed_vectors.py
+
+supabase-vector-schema:
+	@echo "Applying vector table schema and RLS policies to Supabase..."
+	@supabase db remote commit -f libs/shared/vector/pgvector_adapter.py
+	@supabase db remote commit -f libs/shared/vector/supabase_rls.sql
+	@echo "✅ Vector schema and RLS policies applied."
+
+# ==============================================================================
+# Supabase Development Stack
+# ==============================================================================
+
+SCL=tools/supa_cli/main.py
+
+.PHONY: supa-up supa-down supa-reset supa-seed supa-types supa-status
+
+supa-up:
+	@echo "🚀 Starting minimal Supabase stack..."
+	@supabase start -x studio -x imgproxy -x kong -x edge-runtime -x logflare -x mailpit -x postgres-meta -x supavisor
+
+supa-down:
+	@echo "🛑 Stopping Supabase stack..."
+	@supabase stop
+
+supa-reset:
+	@echo "🔄 Resetting database..."
+	@supabase db reset --force
+
+supa-seed:
+	@echo "🌱 Seeding database..."
+	@python $(SCL) seed
+
+supa-types:
+	@echo "📝 Generating TypeScript types..."
+	@supabase gen types typescript --local > libs/shared/data-access/supabase/src/generated.types.ts
+
+supa-status:
+	@echo "🔎 Supabase status..."
+	@supabase status
+
 # AI Stack: Scaffold AI/ML dependencies for a domain
 ai-stack:
 	@if [ -z "$(DOMAIN)" ]; then \
@@ -753,3 +799,38 @@ ai-stack:
 	@echo "🔎 Scaffolding AI stack for domain: $(DOMAIN)"
 	@node libs/shared-python-tools/scaffold_ai_stack.js $(DOMAIN)
 	@echo "✅ AI stack scaffolded for $(DOMAIN). See requirements/pyproject for suggested dependencies."
+
+env-setup:
+	@echo "🔎 Validating AI/ML environment configuration..."
+	@python libs/shared-python-tools/env_setup.py
+	@echo "✅ Environment configuration validated."
+
+# ==============================================================================
+# Observability stack setup
+# ==============================================================================
+
+observability-local:
+	@echo "Starting local observability stack (Jaeger, Prometheus, Grafana)..."
+	docker compose -f docker/observability-compose.yml up -d
+
+observability-stop:
+	@echo "Stopping local observability stack..."
+	docker compose -f docker/observability-compose.yml down
+
+observability-status:
+	@echo "Observability stack status:"
+	docker compose -f docker/observability-compose.yml ps
+
+vector-service:
+	@if [ -z "$(DOMAIN)" ]; then \
+		echo "Error: Please provide a domain name. Usage: make vector-service DOMAIN=mydomain"; exit 1; \
+	fi
+	@echo "Creating vector service for $(DOMAIN) domain..."
+	$(MAKE) domain-lib DOMAIN=$(DOMAIN) NAME=vector TYPE=infrastructure TAGS=vector,embeddings
+	@mkdir -p libs/$(DOMAIN)/infrastructure/vector
+	@cp libs/shared/vector/adapter.py libs/$(DOMAIN)/infrastructure/vector/adapter.py
+	@cp libs/shared/vector/embedding_service.py libs/$(DOMAIN)/infrastructure/vector/embedding_service.py
+	@cp libs/shared/vector/similarity_search.py libs/$(DOMAIN)/infrastructure/vector/similarity_search.py
+	@cp libs/shared/vector/pgvector_adapter.py libs/$(DOMAIN)/infrastructure/vector/pgvector_adapter.py
+	@cp libs/shared/vector/vector_db.yaml libs/$(DOMAIN)/infrastructure/vector/vector_db.yaml
+	@echo "✅ Vector service scaffolded for $(DOMAIN)."
