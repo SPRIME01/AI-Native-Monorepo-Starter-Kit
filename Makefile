@@ -21,8 +21,8 @@ CUSTOM_PY_LIB_GENERATOR ?= $(CUSTOM_PY_GEN_PLUGIN_NAME):shared-python-lib
 
 # Hexagonal Architecture Scaffolding Configuration
 # Edit these lists to define your workspace structure
-APPS := allocation-api payments-api invoicing-api
-DOMAINS := allocation payments invoicing inventory shipping analytics
+APPS ?=
+DOMAINS ?=
 
 # Root paths (relative to Makefile)
 MONOREPO_ROOT := $(CURDIR)
@@ -720,3 +720,27 @@ generate-domain:
 	@echo "🛠️ Generating domain structure for '$(NAME)' using MECE lists..."
 	python scripts/generate_domain.py $(NAME)
 	@echo "✅ Domain '$(NAME)' generated. See libs/$(NAME)/ and related folders."
+
+# ==============================================================================
+# Supabase: Minimal local stack, shared lib, and CLI integration
+# ==============================================================================
+
+supabase-up:
+	@echo "🚀 Starting minimal Supabase stack (db, studio, rest)..."
+	supabase start -x gotrue,rest,storage,meta,studio
+
+supabase-down:
+	@echo "🛑 Stopping Supabase stack..."
+	supabase stop
+
+supabase-seed:
+	@echo "🌱 Seeding Supabase database from supabase/seed.sql..."
+	python scripts/supabase_cli.py seed
+
+supabase-open:
+	@echo "🌐 Opening local PostgREST API explorer..."
+	python scripts/supabase_cli.py open
+
+supabase-lint:
+	@echo "🔎 Linting SQL migrations with sqlfluff..."
+	python scripts/supabase_cli.py lint
