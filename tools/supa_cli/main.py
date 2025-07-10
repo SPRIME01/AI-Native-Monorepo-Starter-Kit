@@ -48,6 +48,24 @@ def supa_types():
     print("Generating TypeScript types from Supabase...")
     original_dir = os.getcwd()
     os.chdir("supabase")
+    try:
+        result = subprocess.run(
+            ["supabase", "gen", "types", "typescript", "--local"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        os.makedirs("supabase/types", exist_ok=True)
+        with open("supabase/types/supabase.ts", "w", encoding="utf-8") as f:
+            f.write(result.stdout)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing command: {e}", file=sys.stderr)
+        print(f"Stdout: {e.stdout}", file=sys.stderr)
+        print(f"Stderr: {e.stderr}", file=sys.stderr)
+    finally:
+        os.chdir(original_dir)
     run_command("supabase gen types typescript --local > supabase/types/supabase.ts")
     os.chdir(original_dir)
 
