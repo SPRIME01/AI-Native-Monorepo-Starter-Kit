@@ -6,7 +6,10 @@ requires-python = ">=3.8"
 [tool.uv]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = "."
+
+[tool.setuptools.packages.find]
+where = ["libs"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -19,5 +22,11 @@ dev = [
     "ruff",
     "mypy",
     "pre-commit",
-    "uv"
+    "uv",
+    "python-dotenv",
+    "pytest-dotenv"
+]
+supabase = [
+    "supabase",
+    "python-dotenv"
 ]
