@@ -1,26 +1,51 @@
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║                AI-Native Monorepo Orchestration               ║
+# ║  Hexagonal/DDD Nx workspace with Python, ML, and Cloud       ║
+# ║  Built for streamlined one-person dev workflow               ║
+# ║  🔄 Reversible Microservice Architecture Support             ║
+# ╚═══════════════════════════════════════════════════════════════╝
+
+# Shell configuration for better error handling and consistency
+SHELL := /bin/bash
+.ONESHELL:
+.DEFAULT_GOAL := help
+
+# Tool shortcuts and defaults
+NX ?= npx nx
+CTX ?=                                      # Context name for DDD operations
+PROJECT ?=                                  # Project name for operations
+TARGET ?=                                   # Target name for infrastructure
+PLAYBOOK ?=                                 # Ansible playbook name
+HOSTS ?=                                    # Ansible hosts
+PCT ?=                                      # Percentage for canary deployments
+TRANSPORT ?= fastapi                        # Transport layer for microservices
+NAMESPACE ?= default                        # Kubernetes namespace
+SCALE_TARGET ?= 70                          # HPA CPU target percentage
+
 # ==============================================================================
-# Makefile: Monorepo Orchestration for AI-Native Projects
-# Built for a streamlined, one-person dev workflow.
-# Uses pyenv, uv, ruff, mypy, pytest, pnpm, and Nx.
-# ==============================================================================elp setup init-python-env generate-python-app generate-python-lib \
-        install-pre-commit lint typecheck test build serve graph deploy-k8s-dev \
-        containerize clean scaffold clean-scaffold tree domain-lib batch-domains \
-        domain-stack allocation-stack payments-stack list-domain lint-domain \
-        test-domain build-domain graph-domain help-domain
+# Environment Variable Validation Utility
+# ==============================================================================
+define need
+  @: "$$${$(1)?}" || (echo "❌ env $(1) missing" && exit 1)
+endef
 
 # ==============================================================================
 # Configuration Variables - Adjust as needed
 # ==============================================================================
 PYTHON_VERSION ?= 3.11.9
-NX_PYTHON_PLUGIN_VERSION ?= 21.0.3 # Updated to latest stable for @nxlv/python
-RUST_TOOLCHAIN_UV_INSTALL ?= false # Set to true to install uv via rustup for a self-contained install
-# Add your custom Nx generator details
+NX_PYTHON_PLUGIN_VERSION ?= 21.0.3
+RUST_TOOLCHAIN_UV_INSTALL ?= false
 CUSTOM_PY_GEN_PLUGIN_NAME ?= shared-python-tools
 CUSTOM_PY_APP_GENERATOR ?= $(CUSTOM_PY_GEN_PLUGIN_NAME):shared-python-app
 CUSTOM_PY_LIB_GENERATOR ?= $(CUSTOM_PY_GEN_PLUGIN_NAME):shared-python-lib
 
+# Service Architecture Configuration
+SERVICE_GENERATOR ?= @org/context-to-service
+SERVICE_REMOVER ?= @org/remove-service-shell
+CONTAINER_REGISTRY ?= ghcr.io/your-org
+SERVICE_BASE_PORT ?= 8000
+
 # Hexagonal Architecture Scaffolding Configuration
-# Edit these lists to define your workspace structure
 APPS ?=
 DOMAINS ?=
 
@@ -62,515 +87,576 @@ endef
 DOMAIN_FILES := $(foreach d,$(DOMAINS),$(call GEN_DOMAIN_FILES,$d))
 
 # One-shot repo-wide folders / files
-SCAFFOLD_ROOT_DIRS  := tools docker
-SCAFFOLD_ROOT_FILES := docker/Dockerfile docker/docker-compose.yml
+SCAFFOLD_ROOT_DIRS  := tools docker k8s
+SCAFFOLD_ROOT_FILES := docker/Dockerfile docker/docker-compose.yml k8s/namespace.yaml
 
 # ==============================================================================
-# Help and Setup Targets
+# Help System - Auto-generated from target comments
 # ==============================================================================
 
-help:
-	@echo "=============================================================================="
-	@echo "Nx Monorepo Management - Quick Start & Daily Workflow"
-	@echo "=============================================================================="
-	@echo "Usage:"
-	@echo "  make setup                - Initial one-time setup of the monorepo."
-	@echo "  make init-python-env      - Initializes/updates the root Python dev environment (.venv)."
+help: ## Show this help menu
+	@echo "╔═══════════════════════════════════════════════════════════════╗"
+	@echo "║                AI-Native Monorepo Commands                    ║"
+	@echo "║         🔄 Reversible Microservice Architecture              ║"
+	@echo "╚═══════════════════════════════════════════════════════════════╝"
+	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) 
+	| awk 'BEGIN{FS=":.*?##"} {printf "  \033[36m%-25s\033[0m %s\n", $1, $2}'
 	@echo ""
-	@echo "  make app NAME=<name>      - Generates a new Python application (e.g., make app NAME=my-fastapi-service)"
-	@echo "  make lib NAME=<name>      - Generates a new Python library (e.g., make lib NAME=my-shared-utils)"
+	@echo "🔄 Service Architecture Examples:"
+	@echo "  make service-split CTX=accounting TRANSPORT=fastapi"
+	@echo "  make service-merge CTX=accounting"
+	@echo "  make deploy-services"
+	@echo "  make scale-service CTX=accounting REPLICAS=3"
 	@echo ""
-	@echo "  make scaffold             - Generate hexagonal architecture workspace structure"
-	@echo "  make clean-scaffold       - Delete generated hexagonal architecture tree"
-	@echo "  make tree                 - Pretty-print current workspace layout"
-	@echo ""
-	@echo "  make install-pre-commit   - Installs git pre-commit hooks."
-	@echo ""
-	@echo "  make lint                 - Lints all affected projects (JS/TS, Python)."
-	@echo "  make typecheck            - Type-checks all affected projects (JS/TS, Python)."
-	@echo "  make test                 - Runs tests for all affected projects."
-	@echo "  make build                - Builds all affected projects (JS/TS apps/libs)."
-	@echo ""
-	@echo "  make serve PROJECT=<name> - Serves a specific application (e.g., React frontend, Python API)."
-	@echo "                              Example: make serve PROJECT=my-react-app"
-	@echo "  make graph                - Opens the Nx dependency graph visualizer."
-	@echo ""
-	@echo "  make help-domain          - Show domain-driven development commands"
-	@echo ""
-	@echo "  make infra-plan TARGET=<name>  - Runs 'terraform plan' or similar for IaC project (e.g., TARGET=vpc)."
-	@echo "  make infra-apply TARGET=<name> - Runs 'terraform apply' or similar for IaC project (e.g., TARGET=vpc)."
-	@echo "  make ansible-run PLAYBOOK=<name> HOSTS=<hosts> - Runs an Ansible playbook."
-	@echo ""
-	@echo "  make containerize PROJECT=<name> - Builds a Docker image for a given project."
-	@echo ""
-	@echo "  make clean                - Cleans build artifacts and caches (use with caution)."
-	@echo "=============================================================================="
+	@echo "🏗️ Development Examples:"
+	@echo "  make context-new CTX=orders      # Create DDD context"
+	@echo "  make train                       # Train ML models"
+	@echo "  make ci                          # Run CI pipeline"
 
-setup: init-nx init-python-env install-custom-py-generator install-pre-commit
+# ==============================================================================
+# Initial Setup and Environment Management
+# ==============================================================================
+
+setup: init-nx init-python-env install-custom-py-generator install-service-generators install-pre-commit ## Initial one-time setup of the monorepo
 	@echo "🚀 Monorepo setup complete! Run 'make help' for available commands."
 
-init-nx:
+init-nx: ## Initialize Nx workspace
 	@python scripts/setup.py init_nx --nx-python-plugin-version=$(NX_PYTHON_PLUGIN_VERSION)
 
-init-python-env:
+init-python-env: ## Initialize/update Python environment (.venv)
 	@python scripts/setup.py init_python_env --python-version=$(PYTHON_VERSION) --rust-toolchain-uv-install=$(RUST_TOOLCHAIN_UV_INSTALL) --root-pyproject-toml=$(ROOT_PYPROJECT_TOML) --monorepo-root=$(MONOREPO_ROOT)
 
-install-custom-py-generator:
+install-custom-py-generator: ## Install custom Python generators
 	@bash ./.make_assets/setup_helper.sh install_custom_py_generator $(CUSTOM_PY_GEN_PLUGIN_NAME)
 
-install-pre-commit:
+install-service-generators: ## Install service architecture generators
+	@echo "🔧 Installing service architecture generators..."
+	@pnpm install @org/nx-service-generators || echo "⚠️  Service generators not yet available, will use built-in implementations"
+
+install-pre-commit: ## Install git pre-commit hooks
 	@python scripts/setup.py install_pre_commit
 
-
 # ==============================================================================
-# Project Generation Targets
+# Project Generation - Apps, Libraries, and DDD Contexts
 # ==============================================================================
 
-app:
-	@sh -c 'if [ -z "$(NAME)" ]; then echo "Error: Please provide a project name. Usage: make app NAME=my-new-api"; exit 1; fi'
+app: ## Generate Python application NAME=<name>
+	$(call need,NAME)
 	@echo "✨ Generating Python application '$(NAME)' with custom settings..."
 	pnpm nx generate $(CUSTOM_PY_APP_GENERATOR) $(NAME) --directory=apps
 	@echo "Installing project-specific Python dependencies for $(NAME)..."
-	pnpm nx run $(NAME):install-deps # Automatically install deps for the new app
+	pnpm nx run $(NAME):install-deps
 	@echo "🎉 Python application '$(NAME)' generated and dependencies installed successfully."
 
-lib:
-	@sh -c 'if [ -z "$(NAME)" ]; then echo "Error: Please provide a project name. Usage: make lib NAME=my-shared-lib"; exit 1; fi'
+lib: ## Generate Python library NAME=<name>
+	$(call need,NAME)
 	@echo "✨ Generating Python library '$(NAME)' with custom settings..."
 	pnpm nx generate $(CUSTOM_PY_LIB_GENERATOR) $(NAME) --directory=libs
 	@echo "Installing project-specific Python dependencies for $(NAME)..."
-	pnpm nx run $(NAME):install-deps # Automatically install deps for the new lib
+	pnpm nx run $(NAME):install-deps
 	@echo "🎉 Python library '$(NAME)' generated and dependencies installed successfully."
 
+context-new: ## Create DDD context with hexagonal architecture CTX=<name>
+	$(call need,CTX)
+	@echo "🏛️ Creating DDD context '$(CTX)' with hexagonal architecture..."
+	@echo "📦 Creating domain layer..."
+	$(NX) g lib $(CTX) --directory=libs/$(CTX)/domain --tags=context:$(CTX),layer:domain,deployable:false
+	@echo "⚙️ Creating application layer..."
+	$(NX) g lib $(CTX) --directory=libs/$(CTX)/application --tags=context:$(CTX),layer:application,deployable:false
+	@echo "🔌 Creating infrastructure layer..."
+	$(NX) g lib $(CTX) --directory=libs/$(CTX)/infrastructure --tags=context:$(CTX),layer:infrastructure,deployable:false
+	@echo "✅ Context $(CTX) created with hexagonal architecture and deployable:false tags."
+	@echo "💡 Use 'make service-split CTX=$(CTX)' to extract as microservice when needed."
+
 # ==============================================================================
-# Daily Workflow Targets (Using Nx Affected)
+# 🔄 Reversible Microservice Architecture Management
 # ==============================================================================
 
-lint:
-	@echo "🔎 Linting affected projects..."
-	pnpm nx affected --target=lint --base=main --parallel=3
+service-split: ## Extract context to microservice CTX=<name> [TRANSPORT=fastapi|grpc|kafka]
+	$(call need,CTX)
+	@echo "🔧 Extracting context '$(CTX)' to microservice with $(TRANSPORT) transport..."
+	@echo "📋 Checking if context exists..."
+	@if [ ! -d "libs/$(CTX)" ]; then \
+		echo "❌ Context $(CTX) not found. Run 'make context-new CTX=$(CTX)' first."; \
+		exit 1; \
+	fi
+	@echo "🏗️ Creating microservice application structure..."
+	@$(MAKE) -s create-service-app CTX=$(CTX) TRANSPORT=$(TRANSPORT)
+	@echo "🐳 Generating container configuration..."
+	@$(MAKE) -s create-service-container CTX=$(CTX)
+	@echo "☸️ Generating Kubernetes manifests..."
+	@$(MAKE) -s create-service-k8s CTX=$(CTX)
+	@echo "🏷️ Updating deployment tags..."
+	@$(MAKE) -s update-service-tags CTX=$(CTX) DEPLOYABLE=true
+	@echo "✅ Context $(CTX) extracted to microservice at apps/$(CTX)-svc/"
+	@echo "💡 Deploy with: make deploy-service CTX=$(CTX)"
 
-typecheck:
-	@echo "🧐 Type-checking affected projects..."
-	pnpm nx affected --target=typecheck --base=main --parallel=3
+service-merge: ## Merge microservice back to monolith CTX=<name>
+	$(call need,CTX)
+	@echo "🔄 Merging microservice '$(CTX)' back to monolith..."
+	@echo "📋 Checking if service exists..."
+	@if [ ! -d "apps/$(CTX)-svc" ]; then \
+		echo "❌ Service $(CTX)-svc not found. Nothing to merge."; \
+		exit 1; \
+	fi
+	@echo "🗑️ Removing service application..."
+	@rm -rf "apps/$(CTX)-svc"
+	@echo "🏷️ Updating deployment tags..."
+	@$(MAKE) -s update-service-tags CTX=$(CTX) DEPLOYABLE=false
+	@echo "✅ Service $(CTX) merged back to monolith."
+	@echo "💡 Context libs/$(CTX) remains unchanged - zero code impact!"
 
-test:
-	@echo "🧪 Running tests for affected projects..."
-	pnpm nx affected --target=test --base=main --parallel=3
+service-status: ## Show deployment status of all contexts
+	@echo "📊 Context Deployment Status:"
+	@echo "════════════════════════════════════════════════════════════════"
+	@for ctx_dir in libs/*/; do \
+		if [ -d "$ctx_dir" ]; then \
+			ctx=$(basename "$ctx_dir"); \
+			if [ -f "$ctx_dir/project.json" ]; then \
+				deployable=$(grep -o '"deployable:[^"]*"' "$ctx_dir/project.json" | cut -d: -f2 | tr -d '"' || echo "false"); \
+				service_exists="❌"; \
+				if [ -d "apps/$ctx-svc" ]; then service_exists="✅"; fi; \
+				printf "  %-20s deployable:%-8s service:%-3s\n" "$ctx" "$deployable" "$service_exists"; \
+			fi; \
+		fi; \
+	done
+	@echo "════════════════════════════════════════════════════════════════"
 
-build:
+service-list: ## List all deployable services
+	@echo "🚀 Deployable Services:"
+	@$(NX) show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$"))' | sort || find apps -name "*-svc" -type d | sed 's|apps/||g' | sort
+
+# ==============================================================================
+# AI/ML Model Lifecycle Management
+# ==============================================================================
+
+model-new: ## Generate new ML model library CTX=<name>
+	$(call need,CTX)
+	@echo "🤖 Creating ML model library '$(CTX)'..."
+	$(NX) g lib $(CTX) --directory=libs/models --tags=context:$(CTX),type:model,deployable:false
+	@echo "✅ ML model library $(CTX) created."
+
+train: ## Train all affected ML models
+	@echo "🧠 Training affected ML models..."
+	$(NX) affected --target=train --parallel
+
+evaluate: ## Evaluate affected ML models
+	@echo "📊 Evaluating affected ML models..."
+	$(NX) affected --target=evaluate --parallel
+
+register: ## Register affected models in model registry
+	@echo "📝 Registering affected models..."
+	$(NX) affected --target=register --parallel
+
+promote: ## Promote model to environment CTX=<name> CH=<candidate|production>
+	$(call need,CTX)
+	$(call need,CH)
+	@echo "🚀 Promoting model $(CTX) to $(CH)..."
+	$(NX) run libs/models/$(CTX):promote --to=$(CH)
+
+canary: ## Canary deploy API with traffic percentage PCT=<5|25|50|100>
+	$(call need,PCT)
+	@echo "🐦 Canary deploying API with $(PCT)% traffic..."
+	$(NX) run apps/api:deploy --percent $(PCT)
+
+# ==============================================================================
+# Development Workflow - Quality Gates and CI/CD
+# ==============================================================================
+
+dev: ## Start affected apps in development mode with watch
+	@echo "🚀 Starting development servers..."
+	$(NX) run-many --target=serve --all --parallel
+
+ci: ## Run complete CI pipeline with service filtering
+	@echo "🔄 Running CI pipeline..."
+	@echo "📝 Formatting check..."
+	$(NX) format:check
+	@echo "🔍 Linting affected projects..."
+	$(NX) affected -t lint --parallel=3
+	@echo "🧪 Testing affected projects..."
+	$(NX) affected -t test --parallel=3
+	@echo "🧪 Running e2e tests..."
+	$(MAKE) e2e-test
 	@echo "📦 Building affected projects..."
-	pnpm nx affected --target=build --base=main --parallel=3
+	$(NX) affected -t build --parallel=3
+	@echo "🐳 Building deployable services..."
+	@$(MAKE) -s build-services
+	@echo "✅ CI pipeline completed successfully!"
 
-serve:
-	@sh -c 'if [ -z "$(PROJECT)" ]; then echo "Error: Please provide a project name to serve. Usage: make serve PROJECT=my-react-app or make serve PROJECT=my-fastapi-service"; exit 1; fi'
+ci-services: ## Run CI only for deployable services
+	@echo "🔄 Running CI pipeline for deployable services..."
+	$(NX) affected --target=lint,test,build --projects="tag:deployable:true" --parallel=3
+
+build-services: ## Build all deployable services
+	@echo "🐳 Building deployable services..."
+	@if $(NX) show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$"))' | head -1 > /dev/null 2>&1; then \
+		$(NX) run-many --target=build --projects="tag:deployable:true" --parallel=3; \
+		echo "✅ All deployable services built successfully!"; \
+	else \
+		echo "ℹ️  No deployable services found. Use 'make service-split CTX=<name>' to create some."; \
+	fi
+
+lint: ## Lint all affected projects
+	@echo "🔎 Linting affected projects..."
+	$(NX) affected --target=lint --base=main --parallel=3
+
+test: ## Run tests for all affected projects
+	@echo "🧪 Running tests for affected projects..."
+	$(NX) affected --target=test --base=main --parallel=3
+
+e2e-test: ## Run e2e tests
+	@echo "🧪 Running e2e tests for vector-db..."
+	$(NX) e2e e2e-vector-db
+
+build: ## Build all affected projects
+	@echo "📦 Building affected projects..."
+	$(NX) affected --target=build --base=main --parallel=3
+
+serve: ## Serve specific application PROJECT=<name>
+	$(call need,PROJECT)
 	@echo "🚀 Serving '$(PROJECT)'..."
-	pnpm nx serve $(PROJECT)
+	$(NX) serve $(PROJECT)
 
-graph:
+graph: ## Open Nx dependency graph visualizer
 	@echo "📊 Opening Nx dependency graph..."
-	pnpm nx graph
+	$(NX) graph
 
 # ==============================================================================
-# Infrastructure as Code (IaC) Targets
+# 🐳 Container and Kubernetes Management
 # ==============================================================================
 
-# Generic target for Terraform, Pulumi, etc.
-# Assumes you have an Nx project named 'infrastructure' that contains sub-directories
-# for different environments/stacks (e.g., 'infrastructure/terraform/vpc')
-# and a 'plan' or 'apply' target defined in its project.json.
-# Example usage: make infra-plan TARGET=vpc
-infra-plan:
-	@sh -c 'if [ -z "$(TARGET)" ]; then echo "Error: Please specify the IaC target (e.g., 'vpc', 'kubernetes-cluster'). Usage: make infra-plan TARGET=vpc"; exit 1; fi'
-	@echo "🗺️ Running IaC plan for '$(TARGET)'..."
-	pnpm nx run infrastructure:plan-$(TARGET) # Assumes target name is plan-<TARGET>
-
-infra-apply:
-	@sh -c 'if [ -z "$(TARGET)" ]; then echo "Error: Please specify the IaC target. Usage: make infra-apply TARGET=vpc"; exit 1; fi'
-	@echo "🚀 Applying IaC changes for '$(TARGET)'..."
-	pnpm nx run infrastructure:apply-$(TARGET) # Assumes target name is apply-<TARGET>
-
-# Specific target for Ansible
-# Assumes an Nx project named 'ansible-playbooks' or similar, with targets
-# configured for specific playbooks.
-# Example usage: make ansible-run PLAYBOOK=deploy-web-servers HOSTS=production
-ansible-run:
-	@sh -c 'if [ -z "$(PLAYBOOK)" ]; then echo "Error: Please specify the Ansible playbook name. Usage: make ansible-run PLAYBOOK=deploy-web-servers"; exit 1; fi'
-	@echo "⚙️ Running Ansible playbook '$(PLAYBOOK)' on hosts '$(HOSTS)'..."
-	pnpm nx run ansible-playbooks:run-$(PLAYBOOK) --args="--inventory $(HOSTS)" # Assumes target name is run-<PLAYBOOK>
-
-# ==============================================================================
-# Containerization Targets (Microservices Transformation)
-# ==============================================================================
-
-# Assumes that each application project (e.g., apps/my-fastapi-service) has a Dockerfile
-# in its root and a 'container' target defined in its project.json to build the image.
-# This target is designed to make "transforming any monorepo into a microservice architecture
-# without fuss at will" a reality at the build step.
-containerize:
-	@sh -c 'if [ -z "$(PROJECT)" ]; then echo "Error: Please specify the project to containerize. Usage: make containerize PROJECT=my-fastapi-service"; exit 1; fi'
+containerize: ## Build Docker image for project PROJECT=<name>
+	$(call need,PROJECT)
 	@echo "🐳 Building Docker image for '$(PROJECT)'..."
-	pnpm nx run $(PROJECT):container # Assumes a 'container' target in project.json
+	$(NX) run $(PROJECT):container
 	@echo "✅ Docker image for '$(PROJECT)' built successfully."
 
-# ==============================================================================
-# Cleanup (Use with Caution!)
-# ==============================================================================
-clean:
-	@echo "🗑️ Cleaning Nx cache, node_modules, and Python environments..."
-	pnpm nx reset
-	rm -rf node_modules
-	rm -rf .venv
-	find . -name ".nx" -type d -exec rm -rf {} +
-	find . -name "dist" -type d -exec rm -rf {} +
-	find . -name "__pycache__" -type d -exec rm -rf {} +
-	find . -name "*.pyc" -delete
-	find . -name ".pytest_cache" -type d -exec rm -rf {} +
-	@echo "Cleanup complete. You may need to run 'make setup' again."
-
-.DEFAULT_GOAL := help
-
-# ==============================================================================
-# Hexagonal Architecture Scaffolding Targets
-# ==============================================================================
-
-# Primary scaffolding targets - generate complete hexagonal architecture workspace
-scaffold:
-	@echo "🏗️ Generating hexagonal architecture workspace..."
-	@echo "📁 Creating apps: $(APPS)"
-	@echo "📁 Creating domains: $(DOMAINS)"
-	@$(MAKE) -s scaffold-apps
-	@$(MAKE) -s scaffold-domains
-	@$(MAKE) -s scaffold-infrastructure
-	@echo "✅ Hexagonal architecture workspace scaffolded."
-	@echo "🏗️ Run 'make tree' to view the complete structure."
-
-# Create app structure for all configured apps with proper FastAPI interfaces
-scaffold-apps:
-	@for app in $(APPS); do \
-		echo "Creating hexagonal app interface: $$app"; \
-		domain=$$(echo $$app | sed 's/-api//'); \
-		mkdir -p "apps/$$app/src/api/v1"; \
-		mkdir -p "apps/$$app/src/dependencies"; \
-		mkdir -p "apps/$$app/src/models"; \
-		if [ ! -f "apps/$$app/src/main.py" ]; then \
-			echo "\"\"\"" > "apps/$$app/src/main.py"; \
-			echo "$$app - Thin interface layer for $$domain domain" >> "apps/$$app/src/main.py"; \
-			echo "This is just an HTTP adapter that exposes $$domain domain services" >> "apps/$$app/src/main.py"; \
-			echo "\"\"\"" >> "apps/$$app/src/main.py"; \
-			echo "from fastapi import FastAPI" >> "apps/$$app/src/main.py"; \
-			echo "from .api.v1 import router as api_v1_router" >> "apps/$$app/src/main.py"; \
-			echo "" >> "apps/$$app/src/main.py"; \
-			echo "app = FastAPI(" >> "apps/$$app/src/main.py"; \
-			echo "    title=\"$$(echo $$domain | sed 's/.*/\u&/') API\"," >> "apps/$$app/src/main.py"; \
-			echo "    description=\"Hexagonal architecture interface for $$domain domain\"," >> "apps/$$app/src/main.py"; \
-			echo "    version=\"1.0.0\"" >> "apps/$$app/src/main.py"; \
-			echo ")" >> "apps/$$app/src/main.py"; \
-			echo "" >> "apps/$$app/src/main.py"; \
-			echo "app.include_router(api_v1_router, prefix=\"/api/v1\")" >> "apps/$$app/src/main.py"; \
-			echo "" >> "apps/$$app/src/main.py"; \
-			echo "@app.get(\"/health\")" >> "apps/$$app/src/main.py"; \
-			echo "async def health_check():" >> "apps/$$app/src/main.py"; \
-			echo "    return {" >> "apps/$$app/src/main.py"; \
-			echo "        \"status\": \"healthy\"," >> "apps/$$app/src/main.py"; \
-			echo "        \"service\": \"$$domain\"," >> "apps/$$app/src/main.py"; \
-			echo "        \"architecture\": \"hexagonal\"" >> "apps/$$app/src/main.py"; \
-			echo "    }" >> "apps/$$app/src/main.py"; \
-			echo "" >> "apps/$$app/src/main.py"; \
-			echo "if __name__ == \"__main__\":" >> "apps/$$app/src/main.py"; \
-			echo "    import uvicorn" >> "apps/$$app/src/main.py"; \
-			echo "    uvicorn.run(app, host=\"0.0.0.0\", port=8000)" >> "apps/$$app/src/main.py"; \
-		fi; \
-		if [ ! -f "apps/$$app/src/api/__init__.py" ]; then \
-			touch "apps/$$app/src/api/__init__.py"; \
-		fi; \
-		if [ ! -f "apps/$$app/src/api/v1/__init__.py" ]; then \
-			echo "\"\"\"API v1 router for $$domain domain\"\"\"" > "apps/$$app/src/api/v1/__init__.py"; \
-			echo "from fastapi import APIRouter, Depends" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "from ...dependencies.$$domain import get_$${domain}_service" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "router = APIRouter()" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "@router.get(\"/$$domain\")" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "async def list_$${domain}s(service=Depends(get_$${domain}_service)):" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "    \"\"\"List all $${domain}s\"\"\"" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "    return await service.get_all()" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "@router.post(\"/$$domain\")" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "async def create_$$domain(data: dict, service=Depends(get_$${domain}_service)):" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "    \"\"\"Create new $$domain\"\"\"" >> "apps/$$app/src/api/v1/__init__.py"; \
-			echo "    return await service.create(data)" >> "apps/$$app/src/api/v1/__init__.py"; \
-		fi; \
-		if [ ! -f "apps/$$app/src/dependencies/__init__.py" ]; then \
-			touch "apps/$$app/src/dependencies/__init__.py"; \
-		fi; \
-		if [ ! -f "apps/$$app/src/dependencies/$$domain.py" ]; then \
-			echo "\"\"\"Dependency injection for $$domain domain\"\"\"" > "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "from libs.$$domain.application.$${domain}_service import $$(echo $$domain | sed 's/.*/\u&/')Service" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "from libs.$$domain.adapters.memory_adapter import Memory$$(echo $$domain | sed 's/.*/\u&/')Adapter" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "def get_$${domain}_service() -> $$(echo $$domain | sed 's/.*/\u&/')Service:" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "    \"\"\"Get $$domain service with injected dependencies\"\"\"" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "    repository = Memory$$(echo $$domain | sed 's/.*/\u&/')Adapter()" >> "apps/$$app/src/dependencies/$$domain.py"; \
-			echo "    return $$(echo $$domain | sed 's/.*/\u&/')Service(repository)" >> "apps/$$app/src/dependencies/$$domain.py"; \
-		fi; \
-		if [ ! -f "apps/$$app/project.json" ]; then \
-			echo "{ \"name\": \"$$app\", \"root\": \"apps/$$app\", \"projectType\": \"application\", \"tags\": [\"scope:$$domain\", \"type:api\"], \"targets\": { \"serve\": { \"executor\": \"@nx/python:run\", \"options\": { \"module\": \"src.main\" } } } }" > "apps/$$app/project.json"; \
-		fi; \
+build-service-images: ## Build Docker images for all deployable services
+	@echo "🐳 Building Docker images for all deployable services..."
+	@for svc in $(find apps -name "*-svc" -type d | sed 's|apps/||g'); do \
+		echo "🔨 Building image for $svc..."; \
+		$(NX) run $svc:docker || echo "⚠️  Failed to build $svc"; \
 	done
 
-# Create domain structure for all configured domains with hexagonal architecture
-scaffold-domains:
-	@for domain in $(DOMAINS); do \
-		echo "Creating hexagonal domain: $$domain"; \
-		mkdir -p "libs/$$domain/domain/entities"; \
-		mkdir -p "libs/$$domain/domain/aggregates"; \
-		mkdir -p "libs/$$domain/domain/value_objects"; \
-		mkdir -p "libs/$$domain/domain/policies"; \
-		mkdir -p "libs/$$domain/domain/rules"; \
-		mkdir -p "libs/$$domain/application"; \
-		mkdir -p "libs/$$domain/adapters"; \
-		touch "libs/$$domain/domain/__init__.py"; \
-		touch "libs/$$domain/domain/entities/__init__.py"; \
-		touch "libs/$$domain/domain/aggregates/__init__.py"; \
-		touch "libs/$$domain/domain/value_objects/__init__.py"; \
-		touch "libs/$$domain/domain/policies/__init__.py"; \
-		touch "libs/$$domain/domain/rules/__init__.py"; \
-		touch "libs/$$domain/application/__init__.py"; \
-		touch "libs/$$domain/adapters/__init__.py"; \
-		if [ ! -f "libs/$$domain/application/$${domain}_service.py" ]; then \
-			echo "\"\"\"" > "libs/$$domain/application/$${domain}_service.py"; \
-			echo "$$(echo $$domain | sed 's/.*/\u&/') Application Service - Use cases and orchestration" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "This contains the business workflows and coordinates domain objects" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "\"\"\"" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "from typing import List, Dict, Any, Optional" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "from ..adapters.$${domain}_repository_port import $$(echo $$domain | sed 's/.*/\u&/')RepositoryPort" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "from ..domain.entities.$${domain} import $$(echo $$domain | sed 's/.*/\u&/')" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "class $$(echo $$domain | sed 's/.*/\u&/')Service:" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    \"\"\"Application service that orchestrates $$domain use cases\"\"\"" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    " >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    def __init__(self, repository: $$(echo $$domain | sed 's/.*/\u&/')RepositoryPort):" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        self._repository = repository" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    " >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    async def get_all(self) -> List[Dict[str, Any]]:" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        \"\"\"Use case: Retrieve all $${domain}s\"\"\"" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        items = await self._repository.find_all()" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        return [item.to_dict() for item in items]" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    " >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    async def create(self, data: Dict[str, Any]) -> Dict[str, Any]:" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        \"\"\"Use case: Create new $$domain\"\"\"" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        item = $$(echo $$domain | sed 's/.*/\u&/').create(**data)" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        saved_item = await self._repository.save(item)" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        return saved_item.to_dict()" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    " >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "    async def get_by_id(self, item_id: str) -> Optional[Dict[str, Any]]:" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        \"\"\"Use case: Get $$domain by ID\"\"\"" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        item = await self._repository.find_by_id(item_id)" >> "libs/$$domain/application/$${domain}_service.py"; \
-			echo "        return item.to_dict() if item else None" >> "libs/$$domain/application/$${domain}_service.py"; \
-		fi; \
-		if [ ! -f "libs/$$domain/domain/entities/$${domain}.py" ]; then \
-			echo "\"\"\"" > "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "$$(echo $$domain | sed 's/.*/\u&/') Entity - Core business object" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "Pure domain logic with no external dependencies" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "\"\"\"" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "from dataclasses import dataclass" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "from datetime import datetime" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "from typing import Dict, Any" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "import uuid" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "@dataclass" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "class $$(echo $$domain | sed 's/.*/\u&/'):" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    \"\"\"Core $$domain entity with business rules\"\"\"" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    id: str" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    name: str" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    description: str" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    created_at: datetime" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    updated_at: datetime" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    " >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    @classmethod" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    def create(cls, name: str, description: str = \"\") -> \"$$(echo $$domain | sed 's/.*/\u&/')\":" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        \"\"\"Factory method with business validation\"\"\"" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        if not name.strip():" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            raise ValueError(\"Name cannot be empty\")" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        " >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        now = datetime.utcnow()" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        return cls(" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            id=str(uuid.uuid4())," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            name=name.strip()," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            description=description.strip()," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            created_at=now," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            updated_at=now" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        )" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    " >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    def is_valid(self) -> bool:" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        \"\"\"Business rule: Check if $$domain is valid\"\"\"" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        return bool(self.name.strip())" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    " >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "    def to_dict(self) -> Dict[str, Any]:" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        \"\"\"Convert to dictionary for serialization\"\"\"" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        return {" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            \"id\": self.id," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            \"name\": self.name," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            \"description\": self.description," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            \"created_at\": self.created_at.isoformat()," >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "            \"updated_at\": self.updated_at.isoformat()" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-			echo "        }" >> "libs/$$domain/domain/entities/$${domain}.py"; \
-		fi; \
-		if [ ! -f "libs/$$domain/adapters/$${domain}_repository_port.py" ]; then \
-			echo "\"\"\"" > "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "Repository Port - Interface for $$domain data persistence" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "Defines the contract without implementation details" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "from abc import ABC, abstractmethod" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "from typing import List, Optional" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "from ..domain.entities.$${domain} import $$(echo $$domain | sed 's/.*/\u&/')" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "class $$(echo $$domain | sed 's/.*/\u&/')RepositoryPort(ABC):" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    \"\"\"Port defining $$domain data access contract\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    " >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    @abstractmethod" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    async def find_all(self) -> List[$$(echo $$domain | sed 's/.*/\u&/')]:" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        \"\"\"Find all $${domain}s\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        pass" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    " >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    @abstractmethod" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    async def find_by_id(self, item_id: str) -> Optional[$$(echo $$domain | sed 's/.*/\u&/')]:" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        \"\"\"Find $$domain by ID\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        pass" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    " >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    @abstractmethod" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    async def save(self, item: $$(echo $$domain | sed 's/.*/\u&/')) -> $$(echo $$domain | sed 's/.*/\u&/'):" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        \"\"\"Save $$domain\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        pass" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    " >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    @abstractmethod" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "    async def delete(self, item_id: str) -> bool:" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        \"\"\"Delete $$domain by ID\"\"\"" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-			echo "        pass" >> "libs/$$domain/adapters/$${domain}_repository_port.py"; \
-		fi; \
-		if [ ! -f "libs/$$domain/adapters/memory_adapter.py" ]; then \
-			echo "\"\"\"" > "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "Memory Adapter - In-memory implementation of $$domain repository port" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "Useful for testing and development" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "from typing import List, Optional, Dict" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "from .$${domain}_repository_port import $$(echo $$domain | sed 's/.*/\u&/')RepositoryPort" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "from ..domain.entities.$${domain} import $$(echo $$domain | sed 's/.*/\u&/')" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "class Memory$$(echo $$domain | sed 's/.*/\u&/')Adapter($$(echo $$domain | sed 's/.*/\u&/')RepositoryPort):" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    \"\"\"In-memory implementation of $$domain repository\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    " >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    def __init__(self):" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        self._data: Dict[str, $$(echo $$domain | sed 's/.*/\u&/')] = {}" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    " >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    async def find_all(self) -> List[$$(echo $$domain | sed 's/.*/\u&/')]:" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        \"\"\"Fetch all $${domain}s from memory\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        return list(self._data.values())" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    " >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    async def find_by_id(self, item_id: str) -> Optional[$$(echo $$domain | sed 's/.*/\u&/')]:" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        \"\"\"Find $$domain by ID\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        return self._data.get(item_id)" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    " >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    async def save(self, item: $$(echo $$domain | sed 's/.*/\u&/')) -> $$(echo $$domain | sed 's/.*/\u&/'):" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        \"\"\"Save $$domain to memory\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        self._data[item.id] = item" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        return item" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    " >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "    async def delete(self, item_id: str) -> bool:" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        \"\"\"Delete $$domain by ID\"\"\"" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        if item_id in self._data:" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "            del self._data[item_id]" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "            return True" >> "libs/$$domain/adapters/memory_adapter.py"; \
-			echo "        return False" >> "libs/$$domain/adapters/memory_adapter.py"; \
-		fi; \
-		if [ ! -f "libs/$$domain/project.json" ]; then \
-			echo "{ \"name\": \"$$domain\", \"root\": \"libs/$$domain\", \"projectType\": \"library\", \"tags\": [\"scope:$$domain\", \"type:domain\", \"layer:hexagonal\"] }" > "libs/$$domain/project.json"; \
-		fi; \
+
+deploy-service: ## Deploy specific service to Kubernetes CTX=<name>
+	$(call need,CTX)
+	@echo "🚀 Deploying service $(CTX) to Kubernetes..."
+	@if [ ! -d "apps/$(CTX)-svc" ]; then \
+		echo "❌ Service $(CTX)-svc not found. Run 'make service-split CTX=$(CTX)' first."; \
+		exit 1; \
+	fi
+	@echo "🐳 Building service image..."
+	$(NX) run $(CTX)-svc:docker
+	@echo "☸️ Applying Kubernetes manifests..."
+	kubectl apply -f apps/$(CTX)-svc/k8s/ --namespace=$(NAMESPACE)
+	@echo "✅ Service $(CTX) deployed successfully!"
+
+deploy-services: ## Deploy all deployable services to Kubernetes
+	@echo "🚀 Deploying all deployable services to Kubernetes..."
+	@for svc in $(find apps -name "*-svc" -type d | sed 's|apps/||g'); do \
+		echo "🚀 Deploying $svc..."; \
+		$(MAKE) -s deploy-service CTX=${svc%-svc} || echo "⚠️  Failed to deploy $svc"; \
 	done
 
-# Create infrastructure and tooling
-scaffold-infrastructure:
-	@echo "Creating infrastructure and tooling..."
-	@if [ ! -d "docker" ]; then mkdir docker; fi
-	@if [ ! -d "tools" ]; then mkdir tools; fi
-	@if [ ! -f "docker/Dockerfile" ]; then \
-		echo "# Multi-stage Python container for hexagonal architecture" > "docker/Dockerfile"; \
-		echo "FROM python:3.11-slim as base" >> "docker/Dockerfile"; \
-		echo "WORKDIR /app" >> "docker/Dockerfile"; \
-		echo "COPY pyproject.toml uv.lock ./" >> "docker/Dockerfile"; \
-		echo "RUN pip install uv && uv sync --frozen" >> "docker/Dockerfile"; \
-		echo "COPY . ." >> "docker/Dockerfile"; \
-		echo "EXPOSE 8000" >> "docker/Dockerfile"; \
-		echo "CMD [\"python\", \"-m\", \"uvicorn\", \"src.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]" >> "docker/Dockerfile"; \
-	fi
-	@if [ ! -f "docker/docker-compose.yml" ]; then \
-		echo "version: \"3.8\"" > "docker/docker-compose.yml"; \
-		echo "services:" >> "docker/docker-compose.yml"; \
-		echo "  app:" >> "docker/docker-compose.yml"; \
-		echo "    build: ." >> "docker/docker-compose.yml"; \
-		echo "    ports:" >> "docker/docker-compose.yml"; \
-		echo "      - \"8000:8000\"" >> "docker/docker-compose.yml"; \
-		echo "    environment:" >> "docker/docker-compose.yml"; \
-		echo "      - ENV=development" >> "docker/docker-compose.yml"; \
-		echo "    volumes:" >> "docker/docker-compose.yml"; \
-		echo "      - .:/app" >> "docker/docker-compose.yml"; \
-	fi
+scale-service: ## Scale service replicas CTX=<name> REPLICAS=<number>
+	$(call need,CTX)
+	$(call need,REPLICAS)
+	@echo "📈 Scaling service $(CTX) to $(REPLICAS) replicas..."
+	kubectl scale deployment $(CTX)-svc --replicas=$(REPLICAS) --namespace=$(NAMESPACE)
+	@echo "✅ Service $(CTX) scaled to $(REPLICAS) replicas."
 
-# Clean up generated scaffolding (use with caution!)
-clean-scaffold:
-	@echo "⚠️  Deleting generated hexagonal architecture folders..."
-	@echo "This will remove: apps/, libs/, tools/, docker/"
-	@read -p "Are you sure? (y/N): " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		rm -rf apps libs docker; \
-		echo "🧹 Hexagonal architecture scaffold cleaned."; \
-	else \
-		echo "❌ Operation cancelled."; \
-	fi
+service-logs: ## View service logs CTX=<name>
+	$(call need,CTX)
+	@echo "📄 Viewing logs for service $(CTX)..."
+	kubectl logs -l app=$(CTX)-svc --namespace=$(NAMESPACE) --tail=100 -f
 
-# Pretty-print current workspace tree structure
-tree:
-	@echo ""
-	@echo "📂 Current Workspace Structure"
-	@echo "==============================="
+# ==============================================================================
+# Infrastructure as Code (IaC) - Terraform, Ansible, and Cloud
+# ==============================================================================
+
+infra-plan: ## Run terraform plan TARGET=<name>
+	$(call need,TARGET)
+	@echo "🗺️ Running IaC plan for '$(TARGET)'..."
+	$(NX) run infrastructure:plan-$(TARGET)
+
+infra-apply: ## Apply terraform changes TARGET=<name>
+	$(call need,TARGET)
+	@echo "🚀 Applying IaC changes for '$(TARGET)'..."
+	$(NX) run infrastructure:apply-$(TARGET)
+
+ansible-run: ## Run Ansible playbook PLAYBOOK=<name> HOSTS=<hosts>
+	$(call need,PLAYBOOK)
+	@echo "⚙️ Running Ansible playbook '$(PLAYBOOK)' on hosts '$(HOSTS)'..."
+	$(NX) run ansible-playbooks:run-$(PLAYBOOK) --args="--inventory $(HOSTS)"
+
+# ==============================================================================
+# Workspace Management and Diagnostics
+# ==============================================================================
+
+cache-clear: ## Clear Nx cache
+	@echo "🧹 Clearing Nx cache..."
+	$(NX) reset
+
+doctor: ## Verify workspace constraints and generate dependency graph
+	@echo "🩺 Running workspace diagnostics..."
+	$(NX) graph --file=diag.html && echo "📊 Dependency graph saved to diag.html"
+	@echo "📋 Checking service architecture integrity..."
+	@$(MAKE) -s service-status
+
+tree: ## Pretty-print current workspace layout
+	@echo "📁 Current workspace structure:"
 	@if command -v tree >/dev/null 2>&1; then \
-		tree -I 'node_modules|.git|.nx|__pycache__|*.pyc|.pytest_cache|dist' -L 4; \
+		tree -I 'node_modules|__pycache__|*.pyc|.pytest_cache|.nx|dist' -L 3; \
 	else \
-		find . -maxdepth 4 -type d 2>/dev/null \
-		| grep -E -v '\.(git|nx)|node_modules|__pycache__|\.pytest_cache|dist' \
-		| sort | sed 's/[^-][^\/]*\//   |/g;s/|\([^ ]\)/|-- \1/'; \
-	fi
-	@echo ""
-
-docker/Dockerfile:
-	@mkdir -p docker
-	@if [ ! -f "$@" ]; then \
-		echo "# Multi-stage Python container for hexagonal architecture" > "$@"; \
-		echo "FROM python:3.11-slim as base" >> "$@"; \
-		echo "WORKDIR /app" >> "$@"; \
-		echo "COPY pyproject.toml uv.lock ./" >> "$@"; \
-		echo "RUN pip install uv && uv sync --frozen" >> "$@"; \
-		echo "COPY . ." >> "$@"; \
-		echo "EXPOSE 8000" >> "$@"; \
-		echo "CMD [\"python\", \"-m\", \"uvicorn\", \"src.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]" >> "$@"; \
+		find . -type d -name 'node_modules' -prune -o -type d -name '__pycache__' -prune -o -type d -name '.nx' -prune -o -type d -name 'dist' -prune -o -type d -print | head -50; \
 	fi
 
-docker/docker-compose.yml:
-	@mkdir -p docker
-	@if [ ! -f "$@" ]; then \
-		echo "version: \"3.8\"" > "$@"; \
-		echo "services:" >> "$@"; \
-		echo "  app:" >> "$@"; \
-		echo "    build: ." >> "$@"; \
-		echo "    ports:" >> "$@"; \
-		echo "      - \"8000:8000\"" >> "$@"; \
-		echo "    environment:" >> "$@"; \
-		echo "      - ENV=development" >> "$@"; \
-		echo "    volumes:" >> "$@"; \
-		echo "      - .:/app" >> "$@"; \
+clean: ## Clean build artifacts and caches (use with caution)
+	@echo "🗑️ Cleaning Nx cache, node_modules, and Python environments..."
+	$(NX) reset
+	rm -rf node_modules .venv
+	find . -name ".nx" -type d -exec rm -rf {} + 2>/dev/null || true
+	find . -name "dist" -type d -exec rm -rf {} + 2>/dev/null || true
+	find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	find . -name "*.pyc" -delete 2>/dev/null || true
+	find . -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
+	@echo "✅ Cleanup complete. You may need to run 'make setup' again."
+
+# ==============================================================================
+# 🔧 Internal Service Management Helpers
+# ==============================================================================
+
+create-service-app: ## Internal: Create service application structure
+	@echo "🏗️ Creating service application for $(CTX)..."
+	@mkdir -p "apps/$(CTX)-svc/src"
+	@echo """" > "apps/$(CTX)-svc/src/main.py"
+	@echo "$(CTX) Microservice - Auto-generated service wrapper" >> "apps/$(CTX)-svc/src/main.py"
+	@echo "Exposes libs/$(CTX) domain logic via $(TRANSPORT) transport" >> "apps/$(CTX)-svc/src/main.py"
+	@echo """" >> "apps/$(CTX)-svc/src/main.py"
+	@if [ "$(TRANSPORT)" = "fastapi" ]; then \
+		echo "from fastapi import FastAPI, Depends" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "from libs.$(CTX).application.$(CTX)_service import $(shell echo $(CTX) | sed 's/.*/\u&/')Service" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "from libs.$(CTX).adapters.memory_adapter import Memory$(shell echo $(CTX) | sed 's/.*/\u&/')Adapter" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "app = FastAPI(" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    title=\"$(shell echo $(CTX) | sed 's/.*/\u&/') Service\"," >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    description=\"Microservice for $(CTX) domain\"," >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    version=\"1.0.0\"" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo ")" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "def get_service():" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    repository = Memory$(shell echo $(CTX) | sed 's/.*/\u&/')Adapter()" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    return $(shell echo $(CTX) | sed 's/.*/\u&/')Service(repository)" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "@app.get(\"/health\")" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "def health_check():" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    return {\"status\": \"healthy\", \"service\": \"$(CTX)\"}" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "@app.get(\"/$(CTX)\")" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "async def list_items(service: $(shell echo $(CTX) | sed 's/.*/\u&/')Service = Depends(get_service)))" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    return await service.get_all()" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "if __name__ == \"__main__\":" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    import uvicorn" >> "apps/$(CTX)-svc/src/main.py"; \
+		echo "    uvicorn.run(app, host=\"0.0.0.0\", port=8000)" >> "apps/$(CTX)-svc/src/main.py"; \
 	fi
+	@echo "{ \"name\": \"$(CTX)-svc\", \"root\": \"apps/$(CTX)-svc\", \"projectType\": \"application\", \"tags\": [\"context:$(CTX)\", \"type:service\", \"deployable:true\"], \"targets\": { \"serve\": { \"executor\": \"@nx/python:run\", \"options\": { \"module\": \"src.main\" } }, \"docker\": { \"executor\": \"@nx/docker:build\", \"options\": { \"context\": \"apps/$(CTX)-svc\", \"dockerfile\": \"apps/$(CTX)-svc/Dockerfile\" } } } }" > "apps/$(CTX)-svc/project.json"
+
+create-service-container: ## Internal: Create Docker configuration for service
+	@echo "🐳 Creating Docker configuration for $(CTX)..."
+	@echo "FROM python:3.11-slim" > "apps/$(CTX)-svc/Dockerfile"
+	@echo "WORKDIR /app" >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "COPY requirements.txt ." >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "RUN pip install -r requirements.txt" >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "COPY . ." >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "EXPOSE 8000" >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "CMD [\"python\", \"src/main.py\"]" >> "apps/$(CTX)-svc/Dockerfile"
+	@echo "fastapi" > "apps/$(CTX)-svc/requirements.txt"
+	@echo "uvicorn" >> "apps/$(CTX)-svc/requirements.txt"
+
+create-service-k8s: ## Internal: Create Kubernetes manifests for service
+	@echo "☸️ Creating Kubernetes manifests for $(CTX)..."
+	@mkdir -p "apps/$(CTX)-svc/k8s"
+	@echo "apiVersion: apps/v1" > "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "kind: Deployment" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "metadata:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  name: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  labels:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    app: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "spec:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  replicas: 2" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  selector:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    matchLabels:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "      app: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  template:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    metadata:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "      labels:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "        app: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    spec:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "      containers:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "      - name: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "        image: $(CONTAINER_REGISTRY)/$(CTX)-svc:latest" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "        ports:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "        - containerPort: 8000" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "        resources:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "          requests:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "            cpu: 100m" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "            memory: 128Mi" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "          limits:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "            cpu: 500m" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "            memory: 512Mi" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "---" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "apiVersion: v1" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "kind: Service" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "metadata:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  name: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "spec:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  selector:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    app: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  ports:" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "  - port: 80" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "    targetPort: 8000" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "---" >> "apps/$(CTX)-svc/k8s/deployment.yaml"
+	@echo "apiVersion: autoscaling/v2" > "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "kind: HorizontalPodAutoscaler" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "metadata:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  name: $(CTX)-svc-hpa" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "spec:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  scaleTargetRef:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "    apiVersion: apps/v1" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "    kind: Deployment" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "    name: $(CTX)-svc" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  minReplicas: 2" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  maxReplicas: 10" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  metrics:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "  - type: Resource" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "    resource:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "      name: cpu" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "      target:" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "        type: Utilization" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+	@echo "        averageUtilization: $(SCALE_TARGET)" >> "apps/$(CTX)-svc/k8s/hpa.yaml"
+
+update-service-tags: ## Internal: Update deployable tags for context
+	$(call need,CTX)
+	$(call need,DEPLOYABLE)
+	@echo "🏷️ Updating deployable tag for $(CTX) to $(DEPLOYABLE)..."
+	@if [ -f "libs/$(CTX)/project.json" ]; then \
+		if grep -q '"deployable:' "libs/$(CTX)/project.json"; then \
+			# Replace existing deployable tag
+			sed -i.bak 's/"deployable:[^"]*"/"deployable:$(DEPLOYABLE)"/g' "libs/$(CTX)/project.json" && rm -f "libs/$(CTX)/project.json.bak"; \
+		else \
+			# Add deployable tag if missing
+			python -c 'import json; f="libs/$(CTX)/project.json"; d=json.load(open(f)); d["tags"]=d.get("tags",[]); d["tags"].append("deployable:$(DEPLOYABLE)"); open(f,"w").write(json.dumps(d,indent=2))'; \
+		fi; \
+		if grep -q '"deployable:$(DEPLOYABLE)"' "libs/$(CTX)/project.json"; then \
+			echo "✅ Tag updated."; \
+		else \
+			echo "❌ Failed to update tag."; exit 1; \
+		fi; \
+	else \
+		echo "❌ libs/$(CTX)/project.json not found."; exit 1; \
+	fi
+
+# ==============================================================================
+# Supabase Integration
+# ==============================================================================
+
+supabase-up: ## Start Supabase local development
+	@echo "🚀 Starting Supabase local development..."
+	@cd supabase && supabase start
+
+supabase-down: ## Stop Supabase local development
+	@echo "🛑 Stopping Supabase local development..."
+	@cd supabase && supabase stop
+
+supabase-seed: ## Seed Supabase with test data
+	@echo "🌱 Seeding Supabase with test data..."
+	@cd supabase && supabase db reset
+
+supabase-open: ## Open Supabase dashboard
+	@echo "📊 Opening Supabase dashboard..."
+	@cd supabase && supabase dashboard
+
+supabase-lint: ## Lint Supabase SQL files
+	@echo "🔍 Linting Supabase SQL files..."
+	@cd supabase && supabase db lint
+
+supabase-vector-migrate: ## Run vector database migrations
+	@echo "🧭 Running vector database migrations..."
+	@cd supabase && supabase db push
+
+supabase-vector-seed: ## Seed vector database
+	@echo "🌱 Seeding vector database..."
+	@python libs/shared/vector/sqlmodel/seed_vectors.py
+
+supabase-vector-schema: ## Generate vector database schema
+	@echo "📋 Generating vector database schema..."
+	@$(NX) run shared-vector:generate-schema
+
+# ==============================================================================
+# Supabase CLI Integration
+# ==============================================================================
+
+SCL=tools/supa_cli/main.py
+
+supa-up: ## Start Supabase with CLI wrapper
+	@echo "🚀 Starting Supabase via CLI wrapper..."
+	@python $(SCL) up
+
+supa-down: ## Stop Supabase with CLI wrapper
+	@echo "🛑 Stopping Supabase via CLI wrapper..."
+	@python $(SCL) down
+
+supa-reset: ## Reset Supabase database
+	@echo "🔄 Resetting Supabase database..."
+	@python $(SCL) reset
+
+supa-seed: ## Seed Supabase via CLI wrapper
+	@echo "🌱 Seeding Supabase via CLI wrapper..."
+	@python $(SCL) seed
+
+supa-types: ## Generate TypeScript types from Supabase
+	@echo "📝 Generating TypeScript types from Supabase..."
+	@python $(SCL) types
+
+supa-status: ## Check Supabase status
+	@echo "📊 Checking Supabase status..."
+	@python $(SCL) status
+
+# ==============================================================================
+# AI/ML Development Stack
+# ==============================================================================
+
+ai-stack: ## Scaffold AI/ML dependencies for domain CTX=<name>
+	$(call need,CTX)
+	@echo "🤖 Setting up AI stack for domain $(CTX)..."
+	@$(MAKE) model-new CTX=$(CTX)
+	@echo "✅ AI stack ready for domain $(CTX)"
+
+env-setup: ## Set up Python environment with AI dependencies
+	@echo "🔧 Setting up Python environment with AI dependencies..."
+	@python libs/shared-python-tools/env_setup.py
+
+# ==============================================================================
+# Observability Stack
+# ==============================================================================
+
+observability-local: ## Start local observability stack (Prometheus, Grafana)
+	@echo "📊 Starting local observability stack..."
+	@docker-compose -f docker/observability-compose.yml up -d
+
+observability-stop: ## Stop local observability stack
+	@echo "🛑 Stopping local observability stack..."
+	@docker-compose -f docker/observability-compose.yml down
+
+observability-status: ## Check observability stack status
+	@echo "📊 Checking observability stack status..."
+	@docker-compose -f docker/observability-compose.yml ps
+
+vector-service: ## Start vector database service
+	@echo "🧭 Starting vector database service..."
+	@$(NX) run shared-vector:serve
 
 # ==============================================================================
 # Enhanced domain-based project generation
@@ -678,159 +764,18 @@ graph-domain:
 	fi
 
 # Help for domain commands
-help-domain:
-	@echo "🎯 Domain-Driven Development Commands:"
-	@echo ""
-	@echo "  make domain-lib DOMAIN=<domain> NAME=<name> [TYPE=application|core|infrastructure|shared] [TAGS=extra,tags]"
-	@echo "    Create a single library within a domain"
-	@echo ""
-	@echo "  make batch-domains DOMAINS=allocation,payments,invoicing [TYPE=application] [SUFFIX=service]"
-	@echo "    Create libraries for multiple domains at once"
-	@echo ""
-	@echo "  make domain-stack DOMAIN=<domain>"
-	@echo "    Create full microservice stack (api, models, database, shared) for a domain"
-	@echo ""
-	@echo "  make allocation-stack | payments-stack"
-	@echo "    Pre-configured domain stacks"
-	@echo ""
-	@echo "  make list-domain DOMAIN=<domain>"
-	@echo "    List all projects within a domain"
-	@echo ""
-	@echo "  make lint-domain|test-domain|build-domain DOMAIN=<domain>"
-	@echo "    Run tasks for all projects in a domain"
-	@echo ""
-	@echo "  make graph-domain DOMAIN=<domain>"
-	@echo "    Visualize dependency graph for a domain"
-	@echo ""
-	@echo "  make scaffold"
-	@echo "    Generate complete hexagonal architecture workspace with configured APPS and DOMAINS"
-	@echo ""
-	@echo "  make clean-scaffold"
-	@echo "    Delete generated hexagonal architecture structure (use with caution!)"
-	@echo ""
-	@echo "  make tree"
-	@echo "    Display current workspace structure"
+help-domain: ## Show domain-driven development commands
+	@echo "🏛️ Domain-Driven Development Commands:"
+	@echo "  make context-new CTX=orders     # Create DDD context"
+	@echo "  make domain-stack CTX=orders    # Create full domain stack"
+	@echo "  make lint-domain CTX=orders     # Lint domain projects"
+	@echo "  make test-domain CTX=orders     # Test domain projects"
+	@echo "  make graph-domain CTX=orders    # Show domain dependency graph"
 
 # ==============================================================================
 # MECE-Driven Domain Generation
 # ==============================================================================
 
-generate-domain:
-	@sh -c 'if [ -z "$(NAME)" ]; then echo "Error: Please provide a domain name. Usage: make generate-domain NAME=order-management"; exit 1; fi'
-	@echo "🛠️ Generating domain structure for '$(NAME)' using MECE lists..."
-	python scripts/generate_domain.py $(NAME)
-	@echo "✅ Domain '$(NAME)' generated. See libs/$(NAME)/ and related folders."
-
-# ==============================================================================
-# Supabase: Minimal local stack, shared lib, and CLI integration
-# ==============================================================================
-
-supabase-up:
-	@echo "🚀 Starting minimal Supabase stack (db, studio, rest)..."
-	supabase start -x gotrue,rest,storage,meta,studio
-
-supabase-down:
-	@echo "🛑 Stopping Supabase stack..."
-	supabase stop
-
-supabase-seed:
-	@echo "🌱 Seeding Supabase database from supabase/seed.sql..."
-	python scripts/supabase_cli.py seed
-
-supabase-open:
-	@echo "🌐 Opening local PostgREST API explorer..."
-	python scripts/supabase_cli.py open
-
-supabase-lint:
-	@echo "🔎 Linting SQL migrations with sqlfluff..."
-	python scripts/supabase_cli.py lint
-
-supabase-vector-migrate:
-	@echo "Applying vector table migration to Supabase..."
-	@supabase db remote commit -f libs/shared/vector/sqlmodel/migrations/001_create_vectors_table.sql
-
-supabase-vector-seed:
-	@echo "Seeding Supabase vector table with example data..."
-	@python libs/shared/vector/sqlmodel/seed_vectors.py
-
-supabase-vector-schema:
-	@echo "Applying vector table schema and RLS policies to Supabase..."
-	@supabase db remote commit -f libs/shared/vector/pgvector_adapter.py
-	@supabase db remote commit -f libs/shared/vector/supabase_rls.sql
-	@echo "✅ Vector schema and RLS policies applied."
-
-# ==============================================================================
-# Supabase Development Stack
-# ==============================================================================
-
-SCL=tools/supa_cli/main.py
-
-.PHONY: supa-up supa-down supa-reset supa-seed supa-types supa-status
-
-supa-up:
-	@echo "🚀 Starting minimal Supabase stack..."
-	@supabase start -x studio -x imgproxy -x kong -x edge-runtime -x logflare -x mailpit -x postgres-meta -x supavisor
-
-supa-down:
-	@echo "🛑 Stopping Supabase stack..."
-	@supabase stop
-
-supa-reset:
-	@echo "🔄 Resetting database..."
-	@supabase db reset --force
-
-supa-seed:
-	@echo "🌱 Seeding database..."
-	@python $(SCL) seed
-
-supa-types:
-	@echo "📝 Generating TypeScript types..."
-	@supabase gen types typescript --local > libs/shared/data-access/supabase/src/generated.types.ts
-
-supa-status:
-	@echo "🔎 Supabase status..."
-	@supabase status
-
-# AI Stack: Scaffold AI/ML dependencies for a domain
-ai-stack:
-	@if [ -z "$(DOMAIN)" ]; then \
-		echo "Error: Please provide a domain name. Usage: make ai-stack DOMAIN=mydomain"; exit 1; \
-	fi
-	@echo "🔎 Scaffolding AI stack for domain: $(DOMAIN)"
-	@node libs/shared-python-tools/scaffold_ai_stack.js $(DOMAIN)
-	@echo "✅ AI stack scaffolded for $(DOMAIN). See requirements/pyproject for suggested dependencies."
-
-env-setup:
-	@echo "🔎 Validating AI/ML environment configuration..."
-	@python libs/shared-python-tools/env_setup.py
-	@echo "✅ Environment configuration validated."
-
-# ==============================================================================
-# Observability stack setup
-# ==============================================================================
-
-observability-local:
-	@echo "Starting local observability stack (Jaeger, Prometheus, Grafana)..."
-	docker compose -f docker/observability-compose.yml up -d
-
-observability-stop:
-	@echo "Stopping local observability stack..."
-	docker compose -f docker/observability-compose.yml down
-
-observability-status:
-	@echo "Observability stack status:"
-	docker compose -f docker/observability-compose.yml ps
-
-vector-service:
-	@if [ -z "$(DOMAIN)" ]; then \
-		echo "Error: Please provide a domain name. Usage: make vector-service DOMAIN=mydomain"; exit 1; \
-	fi
-	@echo "Creating vector service for $(DOMAIN) domain..."
-	$(MAKE) domain-lib DOMAIN=$(DOMAIN) NAME=vector TYPE=infrastructure TAGS=vector,embeddings
-	@mkdir -p libs/$(DOMAIN)/infrastructure/vector
-	@cp libs/shared/vector/adapter.py libs/$(DOMAIN)/infrastructure/vector/adapter.py
-	@cp libs/shared/vector/embedding_service.py libs/$(DOMAIN)/infrastructure/vector/embedding_service.py
-	@cp libs/shared/vector/similarity_search.py libs/$(DOMAIN)/infrastructure/vector/similarity_search.py
-	@cp libs/shared/vector/pgvector_adapter.py libs/$(DOMAIN)/infrastructure/vector/pgvector_adapter.py
-	@cp libs/shared/vector/vector_db.yaml libs/$(DOMAIN)/infrastructure/vector/vector_db.yaml
-	@echo "✅ Vector service scaffolded for $(DOMAIN)."
+generate-domain: ## Generate domain using MECE principles
+	@echo "🧠 Generating domain using MECE principles..."
+	@python scripts/generate_domain.py

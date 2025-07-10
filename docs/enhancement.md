@@ -2114,3 +2114,576 @@ class PromptValidator:
 3. **Phase 3 (Month 1):** AI Observability + Testing Patterns + Model Versioning
 
 These enhancements transform the starter kit from a general-purpose tool into a specialized AI development accelerator while maintaining its core philosophy of eliminating configuration overhead.
+
+-----------------------------------
+Other details and information to incorporate in value adding and non-redundant ways. Incorporate everything in synergy with the enhancements, more advanced, complete, versions of the information which follow to improve the quality of the result.
+--------------------------------------------
+
+#### 🧭 Big Picture
+
+Nx is a **monorepo build system and runtime-agnostic Dev-Ops toolkit**.
+Its value proposition—consistent generators, task runners, caching, and affected-graph logic—maps almost one-to-one to the headaches of ML lifecycle management (version drift, reproducibility, selective deploys).
+Enhancement 5 (“AI Model Version Management”) therefore becomes mostly a question of:
+
+1. Where do models live in the workspace?
+2. How do we tag, compare, and promote versions?
+3. How does runtime code know which version to serve?
+4. How do we release different versions safely (A/B, canary, gradual)?
+
+Below is a step-by-step opinionated way to answer those four questions in an Nx repo.
+
+---
+
+### 1⃣ Scaffold: model-first generators
+
+1. Create a custom Nx plugin (e.g. `@acme/nx-ml`) that ships two generators:
+
+   • `nx g @acme/nx-ml:model <name>` – scaffolds
+   ```
+   libs/
+     models/
+       my-model/
+         v1/
+           model.pkl          # actual artifact or placeholder
+           model.config.json
+         v2/
+           ...
+         project.json         # targets below
+   ```
+   • `nx g @acme/nx-ml:registry-adapter vertex-ai|mlflow|dvc` – adds the necessary SDK, environment variables, and executor schema for the chosen registry.
+
+2. For every generated library, inject a **standard set of targets** into `project.json`:
+
+   ```json
+   {
+     "targets": {
+       "train":  { "executor": "@acme/nx-ml:train" },
+       "evaluate": { "executor": "@acme/nx-ml:evaluate" },
+       "register": { "executor": "@acme/nx-ml:register", "dependsOn": ["train","evaluate"] },
+       "promote": { "executor": "@acme/nx-ml:promote", "dependsOn": ["register"] }
+     },
+     "tags": ["scope:ml", "model:<name>"]
+   }
+   ```
+
+   Each executor is a thin wrapper over the chosen registry SDK (e.g. MLflow, Vertex AI) that pushes or pulls artifacts and emits a JSON manifest containing `version`, `checksum`, and evaluation metrics.
+
+3. The **artifact+manifest** pair for every build becomes an Nx cacheable output, guaranteeing reproducibility and enabling `nx affected` to skip unchanged model builds.
+
+(Why? Model-level version control improves collaboration, reproducibility, and rollback safety .)
+
+---
+
+### 2⃣ Feature flags for runtime selection
+
+1. Put all inference-time entry points in an `apps/api` service (NestJS, FastAPI, etc.).
+2. Introduce a **thin “model gateway” layer**:
+
+   ```ts
+   // libs/model-gateway/src/index.ts
+   import { getFlag } from '@acme/flags';
+
+   export async function loadModel(name: string) {
+     const version = await getFlag(`${name}.version`, 'latest');
+     return import(`@acme/models/${name}/${version}/inference`);
+   }
+   ```
+
+3. Flags can live in LaunchDarkly, Unleash, or a home-grown config table.
+4. Because Nx treats `libs/model-gateway` as a library, *no* change to the underlying model’s binary triggers a rebuild of the whole API—only the manifest change does. A small commit that flips the version flag → zero-downtime canary deploy.
+
+---
+
+### 3⃣ A/B and gradual rollout via Nx task graph + your CI
+
+1. Define **promotion channels** in the registry (`staging`, `candidate`, `production`).
+2. Implement the `promote` executor to move a model version between channels by tagging it in the registry API (e.g. `vertexai.ModelService.UpdateModelVersionAlias`) .
+3. In your GitHub Actions / GitLab CI:
+
+   ```
+   jobs:
+     deploy-api:
+       needs: build-api
+       strategy:
+         matrix:
+           percentage: [5, 25, 50, 100]
+       steps:
+         - run: nx run apps/api:deploy --percent ${{ matrix.percentage }}
+         - run: nx run libs/models/my-model:promote --to=production
+   ```
+
+   • The API is rolled out gradually (blue/green or canary).
+   • Once error budgets look good, the `promote` task re-tags the model so *all* traffic now uses that version.
+
+---
+
+### 4⃣ Performance comparison utilities
+
+1. Generator creates a sibling lib `libs/model-benchmarks/<modelName>.spec.ts`.
+2. The `evaluate` executor writes results to `dist/models/<name>/<version>/metrics.json`.
+3. A simple Nx target `compare` reads the last two version manifests and prints a diff; failing the pipeline if regression > threshold.
+
+   ```bash
+   nx run libs/models/my-model:compare --baseline v1 --candidate v2
+   ```
+
+   This keeps the feedback loop local and cached—developers see perf deltas before pushing.
+
+---
+
+### 5⃣ Putting it all together
+
+• **Local dev**: `nx g @acme/nx-ml:model fraud-detector && cd libs/models/fraud-detector && nx run train`.
+• **PR pipeline**: `nx affected --target=train --target=evaluate --parallel`.
+• **Merge to main**: `nx affected --target=register`.
+• **Release**: `nx run libs/models/fraud-detector:promote --to=candidate` → canary deploy → production.
+
+The net effect:
+
+▶ Consistent **version IDs** live both in Git and in the model registry.
+▶ Runtime toggling is **decoupled** from deploys via feature flags.
+▶ Nx’s task graph prevents unnecessary retraining or redeployment, slashing CI minutes and keeping the repo maintainable.
+▶ Your team gains the same calm, deterministic workflow that seasoned software engineers enjoy—no “model deployment chaos.”
+
+
+
+------------------------------------------
+
+### 🧩 Do Nx-style model-version tooling and Hexagonal/DDD principles fit together?
+
+**Yes — they complement each other.**
+Nx is a build-and-orchestration layer; Hexagonal Architecture is a runtime/shape-of-code decision. The two operate on different axes, so you can overlay the “ports & adapters” style onto an Nx workspace with no friction . In fact the Nx team itself recommends structuring a workspace as a **“modulith” enriched by DDD or Hexagonal boundaries** .
+
+Below is a pragmatic, production-ready mapping that:
+
+1. Keeps your domain core pure (entities, use-cases, domain events).
+2. Adds the model-version registry, feature flags, and A/B rollout as *adapters* behind well-named *ports*.
+3. Still lets Nx give you cached builds, affected-graph CI, and easy generators.
+
+---
+
+#### 1️⃣ Workspace layout: marry Nx projects with Hexagonal layers
+
+```
+apps/
+  api/                            <-- REST or gRPC delivery mechanism
+  jobs/model-batch-runner/        <-- offline inference, cron-style
+libs/
+  domain/                         <-- Entities, VOs, domain events
+    fraud-detection/
+      src/
+        ...
+      project.json                <-- type: 'domain'
+  application/                    <-- Use-cases, service layer, ports
+    fraud-detection/
+      src/
+        ports/
+          ModelRegistryPort.ts
+          FeatureFlagPort.ts
+        use-cases/
+          ScoreTransaction.ts
+        ...
+      project.json                <-- type: 'application'
+  infrastructure/                 <-- Adapters (MLflow, LaunchDarkly…)
+    mlflow-model-registry/
+    vertexai-model-registry/
+    unleash-flags/
+    sns-event-bus/
+  models/                         <-- **versioned artifacts** (generated)
+    fraud-detection/
+      v1/
+      v2/
+```
+
+Key points:
+
+* **Domain & Application libs have *no* runtime deps on infra libs.** They depend on ports (interfaces) only—classic DIP.
+* **Adapters** (in `libs/infrastructure`) implement those ports and are wired via a DI container in `apps/api` or `jobs/*`.
+* **Apps** are just delivery mechanisms; think of them as the outer ring of Hexagonal.
+
+---
+
+#### 2️⃣ Define the essential ports
+
+`libs/application/fraud-detection/ports/ModelRegistryPort.ts`
+```ts
+export interface ModelRegistryPort {
+  getLatest(tag: 'candidate' | 'production'): Promise<ModelMeta>;
+  promote(modelId: string, to: 'candidate' | 'production'): Promise<void>;
+}
+```
+
+`FeatureFlagPort`, `EventBusPort`, etc. follow the same shape.
+Because they live in the *application* layer they are agnostic of MLflow, Vertex AI, LaunchDarkly, SNS, Kafka, etc.
+
+---
+
+#### 3️⃣ Ship adapters as cache-aware Nx executors
+
+Example: MLflow adapter library
+
+```
+libs/infrastructure/mlflow-model-registry/
+  src/
+    MlflowModelRegistryAdapter.ts
+  executors/
+    register.schema.json
+    register.impl.ts      <-- wraps MLflow SDK + emits manifest (cacheable)
+  project.json
+```
+
+`register.impl.ts`
+```ts
+import { MlflowClient } from 'mlflow-ts';
+export default async function registerExec(opts, ctx) {
+  const ml = new MlflowClient(process.env.MLFLOW_URL);
+  const modelId = await ml.registerModel(opts.path, opts.name, opts.version);
+  ctx.outputPath = `dist/models/${opts.name}/${opts.version}`;
+  await fs.writeJSON(`${ctx.outputPath}/manifest.json`, { modelId });
+}
+```
+
+Because the executor declares its outputs, Nx will cache the model artifact + manifest so retraining is skipped unless the code or data changes.
+
+---
+
+#### 4️⃣ Dependency-inversion at runtime via a lightweight DI container
+
+`apps/api/src/main.ts`
+```ts
+import { ScoreTransaction } from '@myorg/application/fraud-detection';
+import { MlflowModelRegistryAdapter } from '@myorg/infrastructure/mlflow-model-registry';
+import { UnleashFlagAdapter } from '@myorg/infrastructure/unleash-flags';
+
+const registry = new MlflowModelRegistryAdapter();
+const flags    = new UnleashFlagAdapter(process.env.UNLEASH_URL);
+
+const scoreTx = new ScoreTransaction(registry, flags); // inject ports
+
+app.post('/score', async (req, res) => {
+  const result = await scoreTx.execute(req.body);
+  res.json(result);
+});
+```
+
+If tomorrow you migrate to Vertex AI, create `VertexModelRegistryAdapter` and swap the binding—no changes in the use-case.
+
+---
+
+#### 5️⃣ A/B & gradual rollout as first-class commands
+
+Add two more Nx targets to the *application* project:
+
+```jsonc
+{
+  "targets": {
+    "canary-promote": {
+      "executor": "@myorg/nx-ml:promote",
+      "options": { "to": "candidate" },
+      "dependsOn": ["evaluate"]
+    },
+    "full-promote": {
+      "executor": "@myorg/nx-ml:promote",
+      "options": { "to": "production" },
+      "dependsOn": ["canary-promote"]
+    }
+  }
+}
+```
+
+In CI:
+
+```
+nx run libs/application/fraud-detection:canary-promote
+# run smoke tests, observe SLOs …
+nx run libs/application/fraud-detection:full-promote
+```
+
+Both tasks call `ModelRegistryPort.promote()` behind the scenes; the concrete adapter decides how.
+
+---
+
+#### 6️⃣ Event Bus integration without leaking details
+
+Define a `DomainEvent` base class in `libs/domain`.
+
+`application` layer publishes events via an `EventBusPort`.
+Adapters for SNS, RabbitMQ, NATS, etc. live in `libs/infrastructure/*`.
+
+Because publish logic is in an Nx executor you can unit-test use-cases synchronously and integration-test the adapter separately.
+
+---
+
+#### 7️⃣ Why this still gives you Nx super-powers
+
+1. **Affected graph:** Changing only an MLflow adapter file affects nothing in `domain` or `application` libs.
+2. **Incremental builds:** Training, evaluation, and registry steps are cache-aware.
+3. **Consistency:** Generators in `@myorg/nx-ml` can create *both* the port skeleton and the first adapter, ensuring every new model follows the same Hexagonal conventions.
+
+---
+
+### ✅ Take-aways
+
+• Hexagonal/DDD dictates *who* may depend on *whom*; Nx dictates *how* work is built and orchestrated. They slot together neatly.
+• Keep **ports** in `libs/application`, **adapters** in `libs/infrastructure`, and let **apps** be the outer delivery mechanisms.
+• Implement model-version management, feature flags, and rollout logic as adapters behind those ports, exposed as Nx executors so they benefit from caching and the task graph.
+• Swap implementations (Vertex AI → MLflow, LaunchDarkly → Unleash) by changing only the binding code—*no* churn in your domain or use-case layers.
+
+That gives you rigorous Hexagonal purity *and* pragmatic Nx productivity.
+
+--------------------------
+
+
+#### 🎯 Goal
+
+Give every bounded-context in your Nx monorepo a **reversible, scripted path** to
+
+• remain an in-process module inside a larger deployable **(monolith / modulith)**
+• or break out into an independently deployable, autoscalable **microservice**
+
+…​with **zero code changes** in domain logic—only generated wrappers, build targets, and infra manifests.
+
+---
+
+### 1️⃣  Treat “deployable” as an attribute, not an architectural destiny
+
+1. Put all domain + application logic in `libs/<context>/…` (Hexagonal core).
+2. Add a JSON tag in each `project.json` saying whether the context is “deployable”:
+
+```jsonc
+{
+  "tags": ["context:accounting", "deployable:false"]
+}
+```
+
+3. Write two Nx *workspace generators*:
+
+| Generator | What it does | Sample |
+|-----------|--------------|--------|
+| `nx g @org/context-to-service <context>` | • Creates `apps/<context>-svc/` (NestJS / Fastify / gRPC / Kafka)<br>• Adds Dockerfile, Helm chart, K8s HPA<br>• Flips `"deployable"` tag to `true` | `nx g @org/context-to-service accounting --transport=http` |
+| `nx g @org/remove-service-shell <context>` | • Deletes the `apps/<context>-svc` folder<br>• Flips tag back to `false` | `nx g @org/remove-service-shell accounting` |
+
+Those generators are pure scaffolding—your Hexagonal libs stay unchanged.
+
+---
+
+### 2️⃣  Build-and-release strategy controlled by tags
+
+1. CI filters on the tag:
+
+```bash
+# build & push only services
+nx affected --affectedBy=$GIT_SHA --target=docker \
+            --projects+="tag:deployable"
+```
+
+2. When `deployable:false`, the libs are bundled into the main API:
+
+```bash
+nx run apps/gateway:build
+```
+
+3. When `deployable:true`, the new service gets its own pipeline stage:
+
+```bash
+nx run apps/accounting-svc:docker
+nx run apps/accounting-svc:helm.release
+```
+
+Result: **one repo, two deployment shapes, same code**—confirmed by large-scale users of monorepos .
+
+---
+
+### 3️⃣  Runtime wiring stays DI-powered
+
+Monolith mode (in-process call):
+
+```ts
+import { ScoreTransaction } from '@org/accounting/application';
+router.post('/score', (req, res) =>
+  di.resolve(ScoreTransaction).execute(req.body));
+```
+
+Microservice mode (out-of-process call):
+
+```ts
+export class AccountingHttpClient implements AccountingPort {
+  async score(dto) {
+    return axios.post(process.env.ACC_SVC_URL + '/score', dto).then(r => r.data);
+  }
+}
+```
+
+Only the binding in `apps/<context>-svc/src/main.ts` changes—domain code untouched.
+
+---
+
+### 4️⃣  Container, scale, observe
+
+The `context-to-service` generator drops opinionated infra:
+
+```
+apps/accounting-svc/
+  Dockerfile          # multistage Node builder
+  k8s/deployment.yaml #  HPA: cpu=70%
+  k8s/istio.yaml      #  or linkerd, optional
+  project.json
+```
+
+Kubernetes makes every service horizontally scalable via `replicas` or `HPA`, matching GKE’s refactor path where containerized components scale independently .
+
+---
+
+### 5️⃣  Decision matrix baked into scripts
+
+```
+# ➡️  Spin *out* when:
+nx g context-to-service <ctx>          # need independent release, high load
+
+# ⬅️  Fold *in* when:
+nx g remove-service-shell <ctx>        # low traffic, cut infra cost
+```
+
+Because the repo stays one Git origin, you keep the **atomic commit + unified dependency benefits** that mono-repos provide  while reserving microservice scalability where needed.
+
+---
+
+### 6️⃣  Summary cheat-sheet
+
+```
+# Create context
+nx g lib accounting --directory=domain
+nx g lib accounting --directory=application
+
+# Start in monolith
+tags: ["deployable:false"]
+
+# Outgrowing? turn into service
+nx g context-to-service accounting --transport=fastify
+
+# Observe CI: new docker & helm stages
+# K8s HPA scales pods on demand
+
+# Traffic dies down? merge back
+nx g remove-service-shell accounting
+```
+
+The workflow converts deployment shape in **minutes**, not months—letting architecture follow **current** scalability needs instead of locking you into yesterday’s choice.
+
+----
+
+#### ✍️ Improved Prompt
+
+> “Generate a drop-in Makefile that I can copy-paste into the root of ANY Nx monorepo to give me an idiot-proof CLI for:
+>
+> • Bootstrapping Hexagonal / DDD project structure
+> • Creating, training, evaluating, registering, and promoting AI/ML models (with versioning)
+> • Spinning a bounded context *out* into an independently deployable micro-service or folding it *back* into the modulith
+> • Driving A/B or canary roll-outs
+> • One-command local dev environment setup and CI shortcuts
+>
+> The Makefile must:
+> 1. Wrap existing `nx` commands and call custom generators/executors where necessary.
+> 2. Guard the user from common mistakes (e.g., missing env vars) with helpful messages.
+> 3. Be POSIX-compatible, self-documenting (`make help`).
+> 4. Require **zero** modifications to domain code when switching between monolith and micro-service modes.
+> 5. Remain ≤ 120 sloc.
+>
+> Also supply a short README section explaining each target.”
+
+---
+
+### 🛠️  Makefile — “nx-plus”
+
+```make
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║                        nx-plus Makefile                      ║
+# ║  High-level CLI wrapper for Hexagonal/DDD Nx workspaces      ║
+# ╚═══════════════════════════════════════════════════════════════╝
+SHELL := /bin/bash
+.ONESHELL:
+.DEFAULT_GOAL := help
+NX ?= npx nx
+CTX ?=                                      # used by many targets
+
+##──────────────────────── HELP ────────────────────────
+help: ## Show this help.
+	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) \
+	| awk 'BEGIN{FS=":.*?##"} {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+##──────────────────── ENV CHECK UTILITY ───────────────
+define need
+  @: "$$${$(1)?}" || (echo "❌ env $(1) missing" && exit 1)
+endef
+
+##──────────────────── SCAFFOLD CONTEXT ────────────────
+context-new: ## Scaffold Hexagonal/DDD context  CTX=<name>
+	@if [ -z "$(CTX)" ]; then echo "❌ CTX missing"; exit 1; fi
+	$(NX) g lib $(CTX) --directory=domain \
+	  && $(NX) g lib $(CTX) --directory=application \
+	  && $(NX) g lib $(CTX) --directory=infrastructure \
+	  && echo "✅ Context $(CTX) created."
+
+##──────────────── MODEL LIFECYCLE ─────────────────────
+model-new: ## Generate new model lib       CTX=<name>
+	@if [ -z "$(CTX)" ]; then echo "❌ CTX missing"; exit 1; fi
+	$(NX) g @acme/nx-ml:model $(CTX)
+
+train: ## Train *all affected* models
+	$(NX) affected --target=train --parallel
+
+evaluate: ## Evaluate affected models
+	$(NX) affected --target=evaluate --parallel
+
+register: ## Register affected models in chosen registry
+	$(NX) affected --target=register --parallel
+
+promote: ## Promote a model        CTX=<name> CH=<candidate|production>
+	$(call need,CH)
+	$(NX) run libs/models/$(CTX):promote --to=$(CH)
+
+canary: ## Canary deploy API with % traffic  PCT=<5|25|50|100>
+	$(call need,PCT)
+	$(NX) run apps/api:deploy --percent $(PCT)
+
+##────────────── SERVICE SPLIT / MERGE ─────────────────
+service-split: ## Extract context -> micro-service  CTX=<name>
+	$(NX) workspace-generator context-to-service $(CTX)
+
+service-merge: ## Fold micro-service back in        CTX=<name>
+	$(NX) workspace-generator remove-service-shell $(CTX)
+
+##────────────── LOCAL DEV / CI SHORTCUTS ─────────────
+dev: ## Start affected apps + watch
+	$(NX) run-many --target=serve --all --parallel
+
+ci: ## Typical CI flow (lint, test, build)
+	$(NX) format:check \
+	 && $(NX) affected -t lint test build --parallel
+
+##────────────── HOUSEKEEPING ─────────────────────────
+cache-clear: ## Wipe Nx cache
+	$(NX) reset
+
+doctor: ## Verify workspace constraints
+	$(NX) graph --file=diag.html && echo "🩺 graph → diag.html"
+```
+
+---
+
+#### 📖 README — Target Cheatsheet
+
+Target             | What it does
+-------------------|--------------------------------------------------
+`make context-new CTX=fraud`     | Generates Hexagonal skeleton (`domain/`, `application/`, `infrastructure/`) for “fraud” context.
+`make model-new CTX=fraud-detector` | Scaffolds a version-ready model library under `libs/models/`.
+`make train` / `make evaluate` / `make register` | Runs respective executors **only** for models touched by the last commit (Nx affected graph).
+`make promote CTX=fraud-detector CH=candidate` | Moves chosen version to `candidate` or `production` channel in the registry; relies on `libs/...:promote` executor.
+`make canary PCT=25` | Re-deploys `apps/api` with 25 % traffic routed to the new model release.
+`make service-split CTX=accounting` | Calls generator that spins up `apps/accounting-svc` with Dockerfile, Helm chart, healthchecks; flips tag `deployable:true`.
+`make service-merge CTX=accounting` | Deletes the service shell and flips tag back to `false`, so context ships inside the monolith again.
+`make dev` | Boots *all* serve targets concurrently for local hacking.
+`make ci`  | Canonical CI sequence: format check → lint → test → build.
+`make cache-clear` / `make doctor` | House-keeping helpers.
+
+The Makefile is **self-documenting** (`make` or `make help` shows the table), POSIX-compliant, and defers real work to `nx`, custom generators, and executors—giving you one high-level entry-point for everyday tasks while preserving the power of Nx under the hood.

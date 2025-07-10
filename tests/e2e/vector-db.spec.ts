@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const SUPABASE_URL = process.env.NX_SUPABASE_URL || "http://localhost:54321";
-const SUPABASE_KEY = process.env.NX_SUPABASE_ANON_KEY || "";
+const SUPABASE_KEY = process.env.NX_SUPABASE_KEY || "";
 
 // Example: Test vector upsert and search via Supabase REST API
 
