@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 
 def run_command(command):
     try:
@@ -15,29 +16,47 @@ def run_command(command):
 
 def supa_up():
     print("Starting Supabase local development...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     run_command("supabase start")
+    os.chdir(original_dir)
 
 def supa_down():
     print("Stopping Supabase local development...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     run_command("supabase stop")
+    os.chdir(original_dir)
 
 def supa_reset():
     print("Resetting Supabase database...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     run_command("supabase db reset")
+    os.chdir(original_dir)
 
 def supa_seed():
     print("Seeding Supabase via CLI wrapper...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     # This assumes a seed.sql or similar is handled by supabase db reset
     # For more complex seeding, you might add specific logic here
     run_command("supabase db reset --data-only")
+    os.chdir(original_dir)
 
 def supa_types():
     print("Generating TypeScript types from Supabase...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     run_command("supabase gen types typescript --local > supabase/types/supabase.ts")
+    os.chdir(original_dir)
 
 def supa_status():
     print("Checking Supabase status...")
+    original_dir = os.getcwd()
+    os.chdir("supabase")
     run_command("supabase status")
+    os.chdir(original_dir)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
