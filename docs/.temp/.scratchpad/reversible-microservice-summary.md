@@ -5,7 +5,7 @@
 - `make service-merge CTX=<context>`: Merges the microservice back into the monolith
 - Tag-based deployment: `deployable:true/false` in project.json controls build/deploy
 - CI/CD integration: Only deployable services are built and deployed as microservices
-- Zero domain code changes: Onaly wrappers and infra are generated/removed
+- Zero domain code changes: Only wrappers and infra are generated/removed
 
 ## Demo Workflow
 ```bash
