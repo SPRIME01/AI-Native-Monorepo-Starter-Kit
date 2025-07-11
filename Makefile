@@ -95,12 +95,8 @@ SCAFFOLD_ROOT_FILES := docker/Dockerfile docker/docker-compose.yml k8s/namespace
 # ==============================================================================
 
 help: ## Show this help menu
-	@echo "╔═══════════════════════════════════════════════════════════════╗"
-	@echo "║                AI-Native Monorepo Commands                    ║"
-	@echo "║         🔄 Reversible Microservice Architecture              ║"
-	@echo "╚═══════════════════════════════════════════════════════════════╝"
-	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) 
-	| awk 'BEGIN{FS=":.*?##"} {printf "  \033[36m%-25s\033[0m %s\n", $1, $2}'
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?##' $(MAKEFILE_LIST) | sed 's/:.*##/:/' | sed 's/##/ - /'
 	@echo ""
 	@echo "🔄 Service Architecture Examples:"
 	@echo "  make service-split CTX=accounting TRANSPORT=fastapi"
@@ -542,12 +538,10 @@ update-service-tags: ## Internal: Update deployable tags for context
 	$(call need,DEPLOYABLE)
 	@echo "🏷️ Updating deployable tag for $(CTX) to $(DEPLOYABLE)..."
 	@if [ -f "libs/$(CTX)/project.json" ]; then \
-		if grep -q '"deployable:' "libs/$(CTX)/project.json"; then \
-			# Replace existing deployable tag
-			sed -i.bak 's/"deployable:[^"]*"/"deployable:$(DEPLOYABLE)"/g' "libs/$(CTX)/project.json" && rm -f "libs/$(CTX)/project.json.bak"; \
+		if jq 'has("tags")' "libs/$(CTX)/project.json" >/dev/null; then \
+			jq '(.tags |= map(select(test("^deployable:")) | "deployable:$(DEPLOYABLE)" // .) + if any(.tags[]; test("^deployable:")) then [] else ["deployable:$(DEPLOYABLE)"] end)' "libs/$(CTX)/project.json" > "libs/$(CTX)/project.json.tmp" && mv "libs/$(CTX)/project.json.tmp" "libs/$(CTX)/project.json"; \
 		else \
-			# Add deployable tag if missing
-			python -c 'import json; f="libs/$(CTX)/project.json"; d=json.load(open(f)); d["tags"]=d.get("tags",[]); d["tags"].append("deployable:$(DEPLOYABLE)"); open(f,"w").write(json.dumps(d,indent=2))'; \
+			jq '.tags = (.tags // []) + ["deployable:$(DEPLOYABLE)"]' "libs/$(CTX)/project.json" > "libs/$(CTX)/project.json.tmp" && mv "libs/$(CTX)/project.json.tmp" "libs/$(CTX)/project.json"; \
 		fi; \
 		if grep -q '"deployable:$(DEPLOYABLE)"' "libs/$(CTX)/project.json"; then \
 			echo "✅ Tag updated."; \
