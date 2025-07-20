@@ -1,0 +1,132 @@
+{
+  "servers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@upstash/context7-mcp",
+        "--key",
+        "cc369a4a-eaf7-47a4-b6ba-61fae9e9e628",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@microsoft/playwright-mcp",
+        "--key",
+        "cc369a4a-eaf7-47a4-b6ba-61fae9e9e628",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "SmitheryMCPServer": {
+      "type": "stdio",
+      "command": "${env:USERPROFILE}\\.mcp\\.venv\\Scripts\\uvicorn.exe",
+      "args": [
+        "server:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--log-level",
+        "info"
+      ],
+      "cwd": "${env:USERPROFILE}\\.mcp",
+      "env": {},
+      "envFile": "${workspaceFolder}/.env"
+    },
+    "ToolboxServer": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@smithery/toolbox",
+        "--key",
+        "env:SMITHERY",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "Context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@upstash/context7-mcp",
+        "--key",
+        "env:SMITHERY",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "MemoryTool": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@mem0ai/mem0-memory-mcp",
+        "--key",
+        "env:SMITHERY",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "GithubServer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@smithery-ai/github",
+        "--key",
+        "env:SMITHERY",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "ExaServer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "exa",
+        "--key",
+        "env:SMITHERY",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    },
+    "SequentialThinkingServer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@xinzhongyouhai/mcp-sequentialthinking-tools",
+        "--key",
+        "cc369a4a-eaf7-47a4-b6ba-61fae9e9e628",
+        "--profile",
+        "married-shark-xX2c39"
+      ]
+    }
+  }
+}

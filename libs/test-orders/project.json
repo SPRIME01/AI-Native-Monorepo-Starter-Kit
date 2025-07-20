@@ -1,0 +1,6 @@
+{
+  "name": "test-orders",
+  "root": "libs/test-orders",
+  "projectType": "library",
+  "tags": ["context:test-orders", "layer:domain", "deployable:false"]
+}

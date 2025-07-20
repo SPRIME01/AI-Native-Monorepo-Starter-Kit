@@ -90,8 +90,140 @@ build-backend = "setuptools.build_meta"
 
 def install_custom_py_generator(custom_py_gen_plugin_name: str):
     print("📦 Installing custom Python generator plugin...")
-    print("Custom Python generator installation skipped (assuming Nx handles it).")
-    print("✅ Custom Python generator plugin ready.")
+    
+    # Create the tools/generators directory structure for the custom generators
+    import shutil
+    import os
+    import json
+    
+    tools_generators_dir = "tools/generators"
+    make_assets_dir = ".make_assets"
+    
+    try:
+        # Ensure tools/generators directory exists
+        os.makedirs(tools_generators_dir, exist_ok=True)
+        print(f"📁 Ensured directory exists: {tools_generators_dir}")
+        
+        # Check if .make_assets directory exists
+        if not os.path.exists(make_assets_dir):
+            print(f"❌ Error: Source directory not found: {make_assets_dir}")
+            print("💡 This directory should contain the generator templates.")
+            print("💡 Please ensure the project is properly set up.")
+            return
+        
+        generators_installed = 0
+        
+        # Install shared-python-app generator
+        app_generator_src = os.path.join(make_assets_dir, "shared-python-app")
+        app_generator_dest = os.path.join(tools_generators_dir, "shared-python-app")
+        
+        if os.path.exists(app_generator_src):
+            try:
+                if os.path.exists(app_generator_dest):
+                    shutil.rmtree(app_generator_dest)
+                    print(f"🗑️  Removed existing generator: {app_generator_dest}")
+                
+                shutil.copytree(app_generator_src, app_generator_dest)
+                print(f"✅ Installed shared-python-app generator to {app_generator_dest}")
+                generators_installed += 1
+            except Exception as e:
+                print(f"❌ Error installing shared-python-app generator: {e}")
+        else:
+            print(f"⚠️  Source generator not found: {app_generator_src}")
+            print("💡 This generator is needed for creating Python applications.")
+        
+        # Install shared-python-lib generator
+        lib_generator_src = os.path.join(make_assets_dir, "shared-python-lib")
+        lib_generator_dest = os.path.join(tools_generators_dir, "shared-python-lib")
+        
+        if os.path.exists(lib_generator_src):
+            try:
+                if os.path.exists(lib_generator_dest):
+                    shutil.rmtree(lib_generator_dest)
+                    print(f"🗑️  Removed existing generator: {lib_generator_dest}")
+                
+                shutil.copytree(lib_generator_src, lib_generator_dest)
+                print(f"✅ Installed shared-python-lib generator to {lib_generator_dest}")
+                generators_installed += 1
+            except Exception as e:
+                print(f"❌ Error installing shared-python-lib generator: {e}")
+        else:
+            print(f"⚠️  Source generator not found: {lib_generator_src}")
+            print("💡 This generator is needed for creating Python libraries.")
+        
+        if generators_installed == 0:
+            print("❌ No generators were installed successfully.")
+            print("💡 Please check that the .make_assets directory contains the generator templates.")
+            return
+        
+        # Create a generators.json file to register the generators with Nx
+        generators_config = {
+            "generators": {
+                f"{custom_py_gen_plugin_name}:shared-python-app": {
+                    "factory": "./tools/generators/shared-python-app/generator",
+                    "schema": "./tools/generators/shared-python-app/schema.json",
+                    "description": "Generate a Python application with custom settings"
+                },
+                f"{custom_py_gen_plugin_name}:shared-python-lib": {
+                    "factory": "./tools/generators/shared-python-lib/generator",
+                    "schema": "./tools/generators/shared-python-lib/schema.json", 
+                    "description": "Generate a Python library with custom settings"
+                }
+            }
+        }
+        
+        # Write generators configuration
+        generators_config_path = "tools/generators.json"
+        try:
+            with open(generators_config_path, 'w') as f:
+                json.dump(generators_config, f, indent=2)
+            print(f"✅ Created generators configuration at {generators_config_path}")
+        except Exception as e:
+            print(f"❌ Error creating generators configuration: {e}")
+            return
+        
+        print("✅ Custom Python generator plugin installation complete.")
+        print(f"💡 You can now use: nx generate {custom_py_gen_plugin_name}:shared-python-app <name>")
+        print(f"💡 You can now use: nx generate {custom_py_gen_plugin_name}:shared-python-lib <name>")
+        print("💡 Example: just app NAME=my-service")
+        print("💡 Example: just lib NAME=my-library")
+        
+    except Exception as e:
+        print(f"❌ Unexpected error during generator installation: {e}")
+        print("💡 Please check file permissions and try again.")
+        print("💡 If the issue persists, you may need to install generators manually.")
+
+def update_service_tags(ctx: str, deployable: str):
+    """Update deployable tags for a context in its project.json file."""
+    import json
+    
+    project_file = f"libs/{ctx}/project.json"
+    
+    if not os.path.exists(project_file):
+        print(f"❌ libs/{ctx}/project.json not found.")
+        sys.exit(1)
+    
+    try:
+        with open(project_file, 'r') as f:
+            data = json.load(f)
+        
+        # Initialize tags if not present
+        if 'tags' not in data:
+            data['tags'] = []
+        
+        # Remove existing deployable tag
+        data['tags'] = [tag for tag in data['tags'] if not tag.startswith('deployable:')]
+        
+        # Add new deployable tag
+        data['tags'].append(f'deployable:{deployable}')
+        
+        with open(project_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        print('✅ Tag updated.')
+    except Exception as e:
+        print(f'❌ Failed to update tag: {e}')
+        sys.exit(1)
 
 def install_pre_commit():
     print("🎣 Installing pre-commit hooks...")
@@ -115,6 +247,8 @@ if __name__ == "__main__":
     parser.add_argument("--monorepo-root", default=os.getcwd(), help="Path to the monorepo root directory.")
     parser.add_argument("--custom-py-gen-plugin-name", default="shared-python-tools",
                         help="Name of the custom Python generator plugin.")
+    parser.add_argument("--ctx", help="Context name for service tag updates.")
+    parser.add_argument("--deployable", help="Deployable flag (true/false) for service tag updates.")
 
     args = parser.parse_args()
 
@@ -126,6 +260,12 @@ if __name__ == "__main__":
         install_custom_py_generator(args.custom_py_gen_plugin_name)
     elif args.action == "install_pre_commit":
         install_pre_commit()
+    elif args.action == "update_service_tags":
+        if not args.ctx or not args.deployable:
+            print("❌ Error: --ctx and --deployable arguments are required for update_service_tags")
+            parser.print_help()
+            exit(1)
+        update_service_tags(args.ctx, args.deployable)
     else:
         print(f"Unknown action: {args.action}")
         parser.print_help()
