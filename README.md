@@ -1,873 +1,343 @@
-↖️ Table of Contents
+# AI-Native Monorepo Starter Kit
 
-<h1 align="center"><code>just</code></h1>
+## 🚀 Overview
 
-<div align="center">
-  <a href="https://crates.io/crates/just">
-    <img src="https://img.shields.io/crates/v/just.svg" alt="crates.io version">
-  </a>
-  <a href="https://github.com/casey/just/actions">
-    <img src="https://github.com/casey/just/workflows/Build/badge.svg" alt="build status">
-  </a>
-  <a href="https://github.com/casey/just/releases">
-    <img src="https://img.shields.io/github/downloads/casey/just/total.svg" alt="downloads">
-  </a>
-  <a href="https://discord.gg/ezYScXR">
-    <img src="https://img.shields.io/discord/695580069837406228?logo=discord" alt="chat on discord">
-  </a>
-  <a href="mailto:casey@rodarmor.com?subject=Thanks%20for%20Just!">
-    <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="say thanks">
-  </a>
-</div>
-<br>
+This repository provides a robust, pre-configured Nx monorepo designed for building AI-native applications with a polyglot stack. It's tailored for individual developers or small teams seeking high productivity, automation, and a "batteries-included" experience without the usual configuration headaches.
 
-`just` is a handy way to save and run project-specific commands.
+We've integrated a modern Python toolchain (uv, ruff, mypy, pytest, pyenv) and orchestrated it seamlessly with Nx for a streamlined developer workflow, automated CI/CD, and simplified microservices transformation. This setup minimizes "fuss" so you can focus on building your core AI products.
 
-This readme is also available as a [book](https://just.systems/man/en/).
+## ✨ Features
 
-(中文文档在 [这里](https://github.com/casey/just/blob/master/README.中文.md), 快看过来!)
+- **Nx Monorepo**: Centralized codebase for React frontends, Python backends, and infrastructure-as-code.
+- **Python Toolchain**:
+  - **uv**: Blazing-fast dependency management and virtual environment orchestration.
+  - **ruff**: High-performance Python linter and formatter.
+  - **mypy** (or Pyre): Strict static type checking for Python.
+  - **pytest**: Robust testing framework with coverage.
+  - **pyenv**: Seamless Python version management.
+- **Automated Setup**: A single `just setup` command orchestrates environment bootstrapping, Nx plugin generation, and pre-commit hook installation, with core logic now implemented in Python for cross-platform reliability.
+- **Simplified Project Generation**: Use `just app` and `just lib` for instantly configured Python applications and libraries.
+- **Intelligent Task Execution**: Leverages Nx's affected commands for fast, incremental linting, testing, and building across your monorepo.
+- **Pre-commit Hooks**: Enforces code quality locally before commits, preventing CI failures.
+- **CI/CD Ready**: Designed for straightforward integration with platforms like GitHub Actions.
+- **IaC Integration**: High-level `just` commands for orchestrating Terraform, Pulumi, and Ansible within the monorepo.
+- **Microservice Transformation**: Simplified `just containerize` command to build Docker images for any application.
 
-Commands, called recipes, are stored in a file called `justfile` with syntax inspired by `make`:
+## 🛠️ Prerequisites
 
-![screenshot](https://raw.githubusercontent.com/casey/just/master/screenshot.png)
+Before you clone and conquer, ensure you have these essentials installed:
 
-You can then run them with `just RECIPE`:
+- **Git**: Version control is fundamental.
+- **Node.js & pnpm**: Node.js LTS (e.g., v20) and pnpm (install via `npm install -g pnpm`).
+- **Pyenv**: Follow the official installation guide: https://github.com/pyenv/pyenv#installation. Crucially, add pyenv initialization to your shell's config (`.bashrc`, `.zshrc`, etc.) and restart your terminal.
+- **Just**: Install the Just command runner:
+  ```bash
+  # Ubuntu/Debian
+  sudo snap install just
 
-```sh
-$ just test-all
-cc *.c -o main
-./test --all
-Yay, all your tests passed!
+  # macOS
+  brew install just
+
+  # Windows
+  choco install just
+  ```
+
+## 🚀 Getting Started
+
+Follow these steps to get your AI-Native Monorepo up and running:
+
+### 📋 Step 1: Create Your New Project
+
+Clone this project template:
+
+```bash
+git clone https://github.com/SPRIME01/AI-Native-Monorepo-Starter-Kit.git <new_project_directory_name>
 ```
 
-`just` has a ton of useful features, and many improvements over `make`:
+This pulls down the template and initializes it as a Git repository, still linked to the original.
 
-- `just` is a command runner, not a build system, so it avoids much of [`make`'s complexity and idiosyncrasies](#what-are-the-idiosyncrasies-of-make-that-just-avoids). No need for `.PHONY` recipes!
+Navigate into the New Project Directory:
 
-- Linux, MacOS, and Windows are supported with no additional dependencies. (Although if your system doesn't have an `sh`, you'll need to [choose a different shell](#shell).)
+```bash
+cd <new_project_directory_name>
+```
 
-- Errors are specific and informative, and syntax errors are reported along with their source context.
+Delete the `.git` Folder:
 
-- Recipes can accept [command line arguments](#recipe-parameters).
+This step is crucial to break the link with the original template repository, allowing you to start fresh with your own project history.
 
-- Wherever possible, errors are resolved statically. Unknown recipes and circular dependencies are reported before anything runs.
+If you're on macOS/Linux, run:
 
-- `just` [loads `.env` files](#dotenv-integration), making it easy to populate environment variables.
+```bash
+rm -rf .git
+```
 
-- Recipes can be [listed from the command line](#listing-available-recipes).
+If you're on Windows, use PowerShell:
 
-- Command line completion scripts are [available for most popular shells](#shell-completion-scripts).
+```powershell
+Remove-Item -Recurse -Force .git
+```
 
-- Recipes can be written in [arbitrary languages](#writing-recipes-in-other-languages), like Python or NodeJS.
+Your project is now just a plain directory with files, no longer a Git repository. This is where your new, independent project truly begins.
 
-- `just` can be invoked from any subdirectory, not just the directory that contains the `justfile`.
+Initialize a New Git Repository:
 
-- And [much more](https://just.systems/man/en/)!
+```bash
+git init
+```
 
-If you need help with `just` please feel free to open an issue or ping me on [Discord](https://discord.gg/ezYScXR). Feature requests and bug reports are always welcome!
+Now, Git sees this as a brand new, empty repository. No history, no remote connections yet.
 
-Installation
-------------
+Add Your Files to the New Repository:
 
-### Prerequisites
+```bash
+git add .
+```
 
-`just` should run on any system with a reasonable `sh`, including Linux, MacOS, and the BSDs.
+This stages all your template files (which are now your new project's files) for the first commit.
 
-On Windows, `just` works with the `sh` provided by [Git for Windows](https://git-scm.com), [GitHub Desktop](https://desktop.github.com), or [Cygwin](http://www.cygwin.com).
+Make Your Initial Commit:
 
-If you'd rather not install `sh`, you can use the `shell` setting to use the shell of your choice.
+```bash
+git commit -m "Initial commit for new project based on template"
+```
 
-Like PowerShell:
+This creates the very first commit for your new project's unique history.
+
+Link to a New Remote (e.g., GitHub/GitLab/etc.): If you're going to host this new project online, create an empty repository on your chosen platform (GitHub, GitLab, etc.). Then, link your local repo to it:
+
+```bash
+git remote add origin <url_to_your_new_empty_remote_repo>
+git branch -M main # Or 'master' if you prefer, but 'main' is the modern default
+git push -u origin main
+```
+
+This pushes your new project's initial commit to its own dedicated remote.
+
+### ⚙️ Step 2: Setup Your Development Environment
+
+Run the One-Time Setup: This `just` command automates everything, leveraging a Python script (`scripts/setup.py`) for cross-platform compatibility: Nx initialization, Python environment setup (pyenv, uv), custom Nx generator creation, and pre-commit hook installation.
+
+```bash
+just setup
+```
+
+- Initial run might take a few minutes as it downloads dependencies and sets up environments.
+- If uv installation via pip fails, you might need to install Rust toolchain first and set `RUST_TOOLCHAIN_UV_INSTALL ?= true` in the Makefile, then retry `just setup`.
+
+## ⚡ Daily Workflow
+
+Here's how to interact with your monorepo for daily development:
+
+### 🏗️ Hexagonal Architecture Scaffolding
+
+This starter kit supports rapid scaffolding of hexagonal (ports & adapters) architecture:
+
+Generate complete workspace structure:
+
+```bash
+just scaffold
+# Creates apps and domain libraries based on APPS and DOMAINS lists in justfile
+```
+
+View current workspace structure:
+
+```bash
+just tree
+# Pretty-prints the directory tree with intelligent filtering
+```
+
+Clean generated structure (use with caution!):
+
+```bash
+just clean
+# Removes generated build artifacts and caches
+```
+
+Customize your architecture: Edit the APPS and DOMAINS lists in the justfile:
 
 ```just
-# use PowerShell instead of sh:
-set shell := ["powershell.exe", "-c"]
-
-hello:
-  Write-Host "Hello, world!"
+APPS := "allocation-api payments-api invoicing-api"
+DOMAINS := "allocation payments invoicing inventory shipping analytics"
 ```
 
-…or `cmd.exe`:
+### 🆕 Project Generation
 
-```just
-# use cmd.exe instead of sh:
-set shell := ["cmd.exe", "/c"]
+New Python Application:
 
-list:
-  dir
+```bash
+just app NAME=my-fastapi-service
 ```
 
-You can also set the shell using command-line arguments. For example, to use PowerShell, launch `just` with `--shell powershell.exe --shell-arg -c`.
+This command automatically generates the app, configures it with ruff, mypy, pytest, and installs its initial dependencies using uv.
 
-(PowerShell is installed by default on Windows 7 SP1 and Windows Server 2008 R2 S1 and later, and `cmd.exe` is quite fiddly, so PowerShell is recommended for most Windows users.)
+New Python Library:
 
-### Packages
-
-<table>
-  <thead>
-    <tr>
-      <th>Operating System</th>
-      <th>Package Manager</th>
-      <th>Package</th>
-      <th>Command</th>
-    </tr>
-  </thead>
-  <tbody>
-  <tr>
-    <td><a href="https://forge.rust-lang.org/release/platform-support.html">Various</a></td>
-    <td><a href="https://www.rust-lang.org">Cargo</a></td>
-    <td><a href="https://crates.io/crates/just">just</a></td>
-    <td><code>cargo install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://en.wikipedia.org/wiki/Microsoft_Windows">Microsoft Windows</a></td>
-    <td><a href="https://scoop.sh">Scoop</a></td>
-    <td><a href="https://github.com/ScoopInstaller/Main/blob/master/bucket/just.json">just</a></td>
-    <td><code>scoop install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://docs.brew.sh/Installation">Various</a></td>
-    <td><a href="https://brew.sh">Homebrew</a></td>
-    <td><a href="https://formulae.brew.sh/formula/just">just</a></td>
-    <td><code>brew install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://en.wikipedia.org/wiki/MacOS">macOS</a></td>
-    <td><a href="https://www.macports.org">MacPorts</a></td>
-    <td><a href="https://ports.macports.org/port/just/summary">just</a></td>
-    <td><code>port install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://www.archlinux.org">Arch Linux</a></td>
-    <td><a href="https://wiki.archlinux.org/title/Pacman">pacman</a></td>
-    <td><a href="https://archlinux.org/packages/community/x86_64/just/">just</a></td>
-    <td><code>pacman -S just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://nixos.org/download.html#download-nix">Various</a></td>
-    <td><a href="https://nixos.org/nix/">Nix</a></td>
-    <td><a href="https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/just/default.nix">just</a></td>
-    <td><code>nix-env -iA nixpkgs.just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://nixos.org/nixos/">NixOS</a></td>
-    <td><a href="https://nixos.org/nix/">Nix</a></td>
-    <td><a href="https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/just/default.nix">just</a></td>
-    <td><code>nix-env -iA nixos.just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://getsol.us">Solus</a></td>
-    <td><a href="https://getsol.us/articles/package-management/basics/en">eopkg</a></td>
-    <td><a href="https://dev.getsol.us/source/just/">just</a></td>
-    <td><code>eopkg install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://voidlinux.org">Void Linux</a></td>
-    <td><a href="https://wiki.voidlinux.org/XBPS">XBPS</a></td>
-    <td><a href="https://github.com/void-linux/void-packages/blob/master/srcpkgs/just/template">just</a></td>
-    <td><code>xbps-install -S just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://www.freebsd.org">FreeBSD</a></td>
-    <td><a href="https://www.freebsd.org/doc/handbook/pkgng-intro.html">pkg</a></td>
-    <td><a href="https://www.freshports.org/deskutils/just/">just</a></td>
-    <td><code>pkg install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://alpinelinux.org">Alpine Linux</a></td>
-    <td><a href="https://wiki.alpinelinux.org/wiki/Alpine_Linux_package_management">apk-tools</a></td>
-    <td><a href="https://pkgs.alpinelinux.org/package/edge/community/x86_64/just">just</a></td>
-    <td><code>apk add just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://getfedora.org">Fedora Linux</a></td>
-    <td><a href="https://dnf.readthedocs.io/en/latest/">DNF</a></td>
-    <td><a href="https://src.fedoraproject.org/rpms/rust-just">just</a></td>
-    <td><code>dnf install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://www.gentoo.org">Gentoo Linux</a></td>
-    <td><a href="https://wiki.gentoo.org/wiki/Portage">Portage</a></td>
-    <td><a href="https://github.com/gentoo-mirror/dm9pZCAq/tree/master/sys-devel/just">dm9pZCAq/sys-devel/just</a></td>
-    <td>
-      <code>eselect repository enable dm9pZCAq</code><br>
-      <code>emerge --sync dm9pZCAq</code><br>
-      <code>emerge sys-devel/just</code>
-    </td>
-  </tr>
-  <tr>
-    <td><a href="https://docs.conda.io/en/latest/miniconda.html#system-requirements">Various</a></td>
-    <td><a href="https://docs.conda.io/projects/conda/en/latest/index.html">Conda</a></td>
-    <td><a href="https://anaconda.org/conda-forge/just">just</a></td>
-    <td><code>conda install -c conda-forge just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://en.wikipedia.org/wiki/Microsoft_Windows">Microsoft Windows</a></td>
-    <td><a href="https://chocolatey.org">Chocolatey</a></td>
-    <td><a href="https://github.com/michidk/just-choco">just</a></td>
-    <td><code>choco install just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://snapcraft.io/docs/installing-snapd">Various</a></td>
-    <td><a href="https://snapcraft.io">Snap</a></td>
-    <td><a href="https://snapcraft.io/just">just</a></td>
-    <td><code>snap install --edge --classic just</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://github.com/casey/just/releases">Various</a></td>
-    <td><a href="https://asdf-vm.com">asdf</a></td>
-    <td><a href="https://github.com/olofvndrhr/asdf-just">just</a></td>
-    <td>
-      <code>asdf plugin add just</code><br>
-      <code>asdf install just &lt;version&gt;</code>
-    </td>
-  </tr>
-  <tr>
-    <td><a href="https://debian.org">Debian</a> and <a href="https://ubuntu.com">Ubuntu</a> derivatives</td>
-    <td><a href="https://mpr.makedeb.org">MPR</a></td>
-    <td><a href="https://mpr.makedeb.org/packages/just">just</a></td>
-    <td>
-      <code>git clone 'https://mpr.makedeb.org/just'</code><br>
-      <code>cd just</code><br>
-      <code>makedeb -si</code>
-    </td>
-  </tr>
-  <tr>
-    <td><a href="https://debian.org">Debian</a> and <a href="https://ubuntu.com">Ubuntu</a> derivatives</td>
-    <td><a href="https://docs.makedeb.org/prebuilt-mpr">Prebuilt-MPR</a></td>
-    <td><a href="https://mpr.makedeb.org/packages/just">just</a></td>
-    <td>
-      <sup><b>You must have the <a href="https://docs.makedeb.org/prebuilt-mpr/getting-started/#setting-up-the-repository">Prebuilt-MPR set up</a> on your system in order to run this command.</b></sup><br>
-      <code>sudo apt install just</code>
-    </td>
-  </tr>
-  </tbody>
-</table>
-
-![package version table](https://repology.org/badge/vertical-allrepos/just.svg)
-
-### Pre-Built Binaries
-
-Pre-built binaries for Linux, MacOS, and Windows can be found on [the releases page](https://github.com/casey/just/releases).
-
-You can use the following command on Linux, MacOS, or Windows to download the latest release, just replace `DEST` with the directory where you'd like to put `just`:
-
-```sh
-curl --proto '=https' --tlsv1.3 -sSf https://just.systems/install.sh | bash -s -- --to DEST
+```bash
+just lib NAME=my-shared-data-models
 ```
 
-For example, to install `just` to `~/bin`:
+This command works similarly for Python libraries.
 
-```sh
-# create ~/bin
-mkdir -p ~/bin
+### 🏃 Running Tasks
 
-# download and extract just to ~/bin/just
-curl --proto '=https' --tlsv1.3 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
+Lint all affected projects:
 
-# add `~/bin` to the paths that your shell searches for executables
-# this line should be added to your shells initialization file,
-# e.g. `~/.bashrc` or `~/.zshrc`
-export PATH="$PATH:$HOME/bin"
-
-# just should now be executable
-just --help
+```bash
+just lint
 ```
 
-Note that `install.sh` may fail on GitHub actions, or in other environments
-where many machines share IP addresses. `install.sh` calls GitHub APIs in order
-to determine the latest version of `just` to install, and those API calls are
-rate-limited on a per-IP basis. To make `install.sh` more reliable in such
-circumstances, pass a specific tag to install with `--tag`.
+Type-check all affected projects:
 
-### GitHub Actions
-
-With [extractions/setup-just](https://github.com/extractions/setup-just):
-
-```yaml
-- uses: extractions/setup-just@v1
-  with:
-    just-version: 0.8 # optional semver specification, otherwise latest
+```bash
+just typecheck
 ```
 
-With [taiki-e/install-action](https://github.com/taiki-e/install-action):
+Run tests for all affected projects:
 
-```yaml
-- uses: taiki-e/install-action@just
+```bash
+just test
 ```
 
-### Release RSS Feed
+Build all affected projects (JS/TS apps/libs):
 
-An [RSS feed](https://en.wikipedia.org/wiki/RSS) of `just` releases is available [here](https://github.com/casey/just/releases.atom).
-
-### Node.js Installation
-
-[just-install](https://npmjs.com/package/just-install) can be used to automate installation of `just` in Node.js applications.
-
-`just` is a great, more robust alternative to npm scripts. If you want to include `just` in the dependencies of a Node.js application, `just-install` will install a local, platform-specific binary as part of the `npm install` command. This removes the need for every developer to install `just` independently using one of the processes mentioned above. After installation, the `just` command will work in npm scripts or with npx. It's great for teams who want to make the set up process for their project as easy as possible.
-
-For more information, see the [just-install README file](https://github.com/brombal/just-install#readme).
-
-Backwards Compatibility
------------------------
-
-With the release of version 1.0, `just` features a strong commitment to backwards compatibility and stability.
-
-Future releases will not introduce backwards incompatible changes that make existing `justfile`s stop working, or break working invocations of the command-line interface.
-
-This does not, however, preclude fixing outright bugs, even if doing so might break `justfiles` that rely on their behavior.
-
-There will never be a `just` 2.0. Any desirable backwards-incompatible changes will be opt-in on a per-`justfile` basis, so users may migrate at their leisure.
-
-Features that aren't yet ready for stabilization are gated behind the `--unstable` flag. Features enabled by `--unstable` may change in backwards incompatible ways at any time.
-
-Editor Support
---------------
-
-`justfile` syntax is close enough to `make` that you may want to tell your editor to use `make` syntax highlighting for `just`.
-
-### Vim and Neovim
-
-#### `vim-just`
-
-The [vim-just](https://github.com/NoahTheDuke/vim-just) plugin provides syntax highlighting for `justfile`s.
-
-Install it with your favorite package manager, like [Plug](https://github.com/junegunn/vim-plug):
-
-```vim
-call plug#begin()
-
-Plug 'NoahTheDuke/vim-just'
-
-call plug#end()
+```bash
+just build
 ```
 
-Or with Vim's built-in package support:
+Serve a specific application (e.g., React frontend or Python API):
 
-```sh
-mkdir -p ~/.vim/pack/vendor/start
-cd ~/.vim/pack/vendor/start
-git clone https://github.com/NoahTheDuke/vim-just.git
+```bash
+just serve PROJECT=my-react-app
+just serve PROJECT=my-fastapi-service
 ```
 
-`vim-just` is also available from [vim-polyglot](https://github.com/sheerun/vim-polyglot), a multi-language Vim plugin.
+Visualize the Nx dependency graph:
 
-#### `tree-sitter-just`
-
-[tree-sitter-just](https://github.com/IndianBoy42/tree-sitter-just) is an [Nvim Treesitter](https://github.com/nvim-treesitter/nvim-treesitter) plugin for Neovim.
-
-#### Makefile Syntax Highlighting
-
-Vim's built-in makefile syntax highlighting isn't perfect for `justfile`s, but it's better than nothing. You can put the following in `~/.vim/filetype.vim`:
-
-```vimscript
-if exists("did_load_filetypes")
-  finish
-endif
-
-augroup filetypedetect
-  au BufNewFile,BufRead justfile setf make
-augroup END
+```bash
+just graph
 ```
 
-Or add the following to an individual `justfile` to enable `make` mode on a per-file basis:
+### 🌍 Infrastructure-as-Code (IaC)
 
-```text
-# vim: set ft=make :
+Run a plan for an IaC target (e.g., Terraform VPC stack):
+
+```bash
+just infra-plan TARGET=vpc
 ```
 
-### Emacs
+Requires an Nx project named infrastructure with a plan-<TARGET> task.
 
-[just-mode](https://github.com/leon-barrett/just-mode.el) provides syntax highlighting and automatic indentation of `justfile`s. It is available on [MELPA](https://melpa.org/) as [just-mode](https://melpa.org/#/just-mode).
+Apply changes for an IaC target (e.g., Kubernetes cluster):
 
-[justl](https://github.com/psibi/justl.el) provides commands for executing and listing recipes.
-
-You can add the following to an individual `justfile` to enable `make` mode on a per-file basis:
-
-```text
-# Local Variables:
-# mode: makefile
-# End:
+```bash
+just infra-apply TARGET=kubernetes-cluster
 ```
 
-### Visual Studio Code
+Requires an Nx project named infrastructure with an apply-<TARGET> task.
 
-An extension for VS Code by [skellock](https://github.com/skellock) is [available here](https://marketplace.visualstudio.com/items?itemName=skellock.just) ([repository](https://github.com/skellock/vscode-just)), but is no longer actively developed.
+Run an Ansible playbook:
 
-You can install it from the command line by running:
-
-```sh
-code --install-extension skellock.just
+```bash
+just ansible-run PLAYBOOK=deploy-edge-nodes HOSTS=production-cluster
 ```
 
-An more recently active fork by [sclu1034](https://github.com/sclu1034) is available [here](https://github.com/sclu1034/vscode-just).
+Requires an Nx project named ansible-playbooks with a run-<PLAYBOOK> task.
 
-### JetBrains IDEs
+### 📦 Containerization (Microservices)
 
-A plugin for JetBrains IDEs by [linux_china](https://github.com/linux-china) is [available here](https://plugins.jetbrains.com/plugin/18658-just).
+Build a Docker image for any application:
 
-### Kakoune
-
-Kakoune supports `justfile` syntax highlighting out of the box, thanks to TeddyDD.
-
-### Sublime Text
-
-The [Just package](https://github.com/nk9/just_sublime) by [nk9](https://github.com/nk9) with `just` syntax and some other tools is available on [PackageControl](https://packagecontrol.io/packages/Just).
-
-### Other Editors
-
-Feel free to send me the commands necessary to get syntax highlighting working in your editor of choice so that I may include them here.
-
-Quick Start
------------
-
-See [the installation section](#installation) for how to install `just` on your computer. Try running `just --version` to make sure that it's installed correctly.
-
-For an overview of the syntax, check out [this cheatsheet](https://cheatography.com/linux-china/cheat-sheets/justfile/).
-
-Once `just` is installed and working, create a file named `justfile` in the root of your project with the following contents:
-
-```just
-recipe-name:
-  echo 'This is a recipe!'
-
-# this is a comment
-another-recipe:
-  @echo 'This is another recipe.'
+```bash
+just containerize PROJECT=my-fastapi-service
 ```
 
-When you invoke `just` it looks for file `justfile` in the current directory and upwards, so you can invoke it from any subdirectory of your project.
+Requires a Dockerfile in the project's root and a container target in its project.json.
 
-The search for a `justfile` is case insensitive, so any case, like `Justfile`, `JUSTFILE`, or `JuStFiLe`, will work. `just` will also look for files with the name `.justfile`, in case you'd like to hide a `justfile`.
+### 🔄 Reversible Microservice Architecture
 
-Running `just` with no arguments runs the first recipe in the `justfile`:
+This starter kit features a unique reversible microservice architecture that allows you to:
 
-```sh
-$ just
-echo 'This is a recipe!'
-This is a recipe!
+**Extract contexts to microservices:**
+
+```bash
+just service-split CTX=accounting TRANSPORT=fastapi
 ```
 
-One or more arguments specify the recipe(s) to run:
+This creates a complete microservice with:
+- FastAPI application with health checks
+- Docker container configuration
+- Kubernetes manifests
+- Production-ready structure
 
-```sh
-$ just another-recipe
-This is another recipe.
+**Merge microservices back to monolith:**
+
+```bash
+just service-merge CTX=accounting
 ```
 
-`just` prints each command to standard error before running it, which is why `echo 'This is a recipe!'` was printed. This is suppressed for lines starting with `@`, which is why `echo 'This is another recipe.'` was not printed.
+This removes the service application while preserving the domain logic in the monolith - zero code impact!
 
-Recipes stop running if a command fails. Here `cargo publish` will only run if `cargo test` succeeds:
+**View deployment status:**
 
-```just
-publish:
-  cargo test
-  # tests passed, time to publish!
-  cargo publish
+```bash
+just service-status
 ```
 
-Recipes can depend on other recipes. Here the `test` recipe depends on the `build` recipe, so `build` will run before `test`:
+Shows which contexts are deployed as services and which remain in the monolith.
 
-```just
-build:
-  cc main.c foo.c bar.c -o main
+**Deploy services:**
 
-test: build
-  ./test
-
-sloc:
-  @echo "`wc -l *.c` lines of code"
+```bash
+just deploy-service CTX=accounting
+just deploy-services  # Deploy all services
 ```
 
-```sh
-$ just test
-cc main.c foo.c bar.c -o main
-./test
-testing… all tests passed!
+### 🎯 Domain-Driven Development
+
+This starter kit supports domain-driven architecture with specialized commands for organizing code by business domains:
+
+Create a DDD context with hexagonal architecture:
+
+```bash
+just context-new CTX=orders
 ```
 
-Recipes without dependencies will run in the order they're given on the command line:
+This creates domain, application, and infrastructure layers for the context.
 
-```sh
-$ just build sloc
-cc main.c foo.c bar.c -o main
-1337 lines of code
+Create domain-specific libraries:
+
+```bash
+just model-new CTX=orders
 ```
 
-Dependencies will always run first, even if they are passed after a recipe that depends on them:
+Generate full microservice stack for a domain:
 
-```sh
-$ just test build
-cc main.c foo.c bar.c -o main
-./test
-testing… all tests passed!
+```bash
+just domain-stack DOMAIN=allocation
+# Creates: allocation-api, allocation-models, allocation-database, allocation-shared
 ```
 
-Examples
---------
+### 🧹 Cleanup
 
-A variety of example `justfile`s can be found in the [examples directory](https://github.com/casey/just/tree/master/examples).
+Clean build artifacts and caches:
 
-Features
---------
-
-### The Default Recipe
-
-When `just` is invoked without a recipe, it runs the first recipe in the `justfile`. This recipe might be the most frequently run command in the project, like running the tests:
-
-```just
-test:
-  cargo test
+```bash
+just clean
 ```
 
-You can also use dependencies to run multiple recipes by default:
+Use with caution! This removes node_modules, .venv, and Nx caches. You'll need to run `just setup` again to restore the environment.
 
-```just
-default: lint build test
+## ⚙️ Customization & Advanced Usage
 
-build:
-  echo Building…
+- **Justfile Variables**: Adjust `PYTHON_VERSION`, `NX_PYTHON_PLUGIN_VERSION`, and `RUST_TOOLCHAIN_UV_INSTALL` directly in the justfile if needed.
+- **Custom Nx Generators**: The `libs/shared-python-tools` plugin contains the generator.ts files that define how new Python projects are structured and configured. Feel free to modify them to fit specific architectural patterns or add new default dependencies/tools.
+- **pyproject.toml**: For project-specific Python dependencies, edit the pyproject.toml inside your individual `apps/<project-name>` or `libs/<project-name>` directories, then run `pnpm nx run <project-name>:install-deps` (or use `just app`/`just lib` for new projects which does it automatically).
+- **project.json**: Each Nx project (including your Python and IaC ones) has a project.json. This is where specific tasks (like container, infra-plan, infra-apply) are defined using nx:run-commands. You'll customize these as you build out your IaC and microservice projects.
 
-test:
-  echo Testing…
+## 🤝 Contributing
 
-lint:
-  echo Linting…
-```
-
-If no recipe makes sense as the default recipe, you can add a recipe to the beginning of your `justfile` that lists the available recipes:
-
-```just
-default:
-  just --list
-```
-
-### Listing Available Recipes
-
-Recipes can be listed in alphabetical order with `just --list`:
-
-```sh
-$ just --list
-Available recipes:
-    build
-    test
-    deploy
-    lint
-```
-
-`just --summary` is more concise:
-
-```sh
-$ just --summary
-build test deploy lint
-```
-
-Pass `--unsorted` to print recipes in the order they appear in the `justfile`:
-
-```just
-test:
-  echo 'Testing!'
-
-build:
-  echo 'Building!'
-```
-
-```sh
-$ just --list --unsorted
-Available recipes:
-    test
-    build
-```
-
-```sh
-$ just --summary --unsorted
-test build
-```
-
-If you'd like `just` to default to listing the recipes in the `justfile`, you can use this as your default recipe:
-
-```just
-default:
-  @just --list
-```
-
-Note that you may need to add `--justfile {{justfile()}}` to the line above above. Without it, if you executed `just -f /some/distant/justfile -d .` or `just -f ./non-standard-justfile`, the plain `just --list` inside the recipe would not necessarily use the file you provided. It would try to find a justfile in your current path, maybe even resulting in a `No justfile found` error.
-
-The heading text can be customized with `--list-heading`:
-
-```sh
-$ just --list --list-heading $'Cool stuff…\n'
-Cool stuff…
-    test
-    build
-```
-
-And the indentation can be customized with `--list-prefix`:
-
-```sh
-$ just --list --list-prefix ····
-Available recipes:
-····test
-····build
-```
-
-The argument to `--list-heading` replaces both the heading and the newline following it, so it should contain a newline if non-empty. It works this way so you can suppress the heading line entirely by passing the empty string:
-
-```sh
-$ just --list --list-heading ''
-    test
-    build
-```
-
-### Aliases
-
-Aliases allow recipes to be invoked with alternative names:
-
-```just
-alias b := build
-
-build:
-  echo 'Building!'
-```
-
-```sh
-$ just b
-build
-echo 'Building!'
-Building!
-```
-
-### Settings
-
-Settings control interpretation and execution. Each setting may be specified at most once, anywhere in the `justfile`.
-
-For example:
-
-```just
-set shell := ["zsh", "-cu"]
-
-foo:
-  # this line will be run as `zsh -cu 'ls **/*.txt'`
-  ls **/*.txt
-```
-
-#### Table of Settings
-
-| Name                      | Value              | Default | Description                                                                                   |
-| ------------------------- | ------------------ | ------- |---------------------------------------------------------------------------------------------- |
-| `allow-duplicate-recipes` | boolean            | `false` | Allow recipes appearing later in a `justfile` to override earlier recipes with the same name. |
-| `dotenv-load`             | boolean            | `false` | Load a `.env` file, if present.                                                               |
-| `export`                  | boolean            | `false` | Export all variables as environment variables.                                                |
-| `fallback`                | boolean            | `false` | Search `justfile` in parent directory if the first recipe on the command line is not found.   |
-| `ignore-comments`         | boolean            | `false` | Ignore recipe lines beginning with `#`.                                                       |
-| `positional-arguments`    | boolean            | `false` | Pass positional arguments.                                                                    |
-| `shell`                   | `[COMMAND, ARGS…]` | -       | Set the command used to invoke recipes and evaluate backticks.                                |
-| `tempdir`                 | string             | -       | Create temporary directories in `tempdir` instead of the system default temporary directory.  |
-| `windows-powershell`      | boolean            | `false` | Use PowerShell on Windows as default shell. (Deprecated. Use `windows-shell` instead.         |
-| `windows-shell`           | `[COMMAND, ARGS…]` | -       | Set the command used to invoke recipes and evaluate backticks.                                |
-
-Boolean settings can be written as:
-
-```justfile
-set NAME
-```
-
-Which is equivalent to:
-
-```justfile
-set NAME := true
-```
-
-#### Allow Duplicate Recipes
-
-If `allow-duplicate-recipes` is set to `true`, defining multiple recipes with the same name is not an error and the last definition is used. Defaults to `false`.
-
-```just
-set allow-duplicate-recipes
-
-@foo:
-  echo foo
-
-@foo:
-  echo bar
-```
-
-```sh
-$ just foo
-bar
-```
-
-#### Dotenv Load
-
-If `dotenv-load` is `true`, a `.env` file will be loaded if present. Defaults to `false`.
-
-#### Export
-
-The `export` setting causes all `just` variables to be exported as environment variables. Defaults to `false`.
-
-```just
-set export
-
-a := "hello"
-
-@foo b:
-  echo $a
-  echo $b
-```
-
-```sh
-$ just foo goodbye
-hello
-goodbye
-```
-
-#### Positional Arguments
-
-If `positional-arguments` is `true`, recipe arguments will be passed as positional arguments to commands. For linewise recipes, argument `$0` will be the name of the recipe.
-
-For example, running this recipe:
-
-```just
-set positional-arguments
-
-@foo bar:
-  echo $0
-  echo $1
-```
-
-Will produce the following output:
-
-```sh
-$ just foo hello
-foo
-hello
-```
-
-When using an `sh`-compatible shell, such as `bash` or `zsh`, `$@` expands to the positional arguments given to the recipe, starting from one. When used within double quotes as `"$@"`, arguments including whitespace will be passed on as if they were double-quoted. That is, `"$@"` is equivalent to `"$1" "$2"`… When there are no positional parameters, `"$@"` and `$@` expand to nothing (i.e., they are removed).
-
-This example recipe will print arguments one by one on separate lines:
-
-```just
-set positional-arguments
-
-@test *args='':
-  bash -c 'while (( "$#" )); do echo - $1; shift; done' -- "$@"
-```
-
-Running it with _two_ arguments:
-
-```sh
-$ just test foo "bar baz"
-- foo
-- bar baz
-```
-
-#### Shell
-
-The `shell` setting controls the command used to invoke recipe lines and backticks. Shebang recipes are unaffected.
-
-```just
-# use python3 to execute recipe lines and backticks
-set shell := ["python3", "-c"]
-
-# use print to capture result of evaluation
-foos := `print("foo" * 4)`
-
-foo:
-  print("Snake snake snake snake.")
-  print("{{foos}}")
-```
-
-`just` passes the command to be executed as an argument. Many shells will need an additional flag, often `-c`, to make them evaluate the first argument.
-
-##### Windows Shell
-
-`just` uses `sh` on Windows by default. To use a different shell on Windows, use `windows-shell`:
-
-```just
-set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
-
-hello:
-  Write-Host "Hello, world!"
-```
-
-See [powershell.just](https://github.com/casey/just/blob/master/examples/powershell.just) for a justfile that uses PowerShell on all platforms.
-
-##### Windows PowerShell
-
-*`set windows-powershell` uses the legacy `powershell.exe` binary, and is no longer recommended. See the `windows-shell` setting above for a more flexible way to control which shell is used on Windows.*
-
-`just` uses `sh` on Windows by default. To use `powershell.exe` instead, set `windows-powershell` to true.
-
-```just
-set windows-powershell := true
-
-hello:
-  Write-Host "Hello, world!"
-```
-
-##### Python 3
-
-```just
-set shell := ["python3", "-c"]
-```
-
-##### Bash
-
-```just
-set shell := ["bash", "-uc"]
-```
-
-##### Z Shell
-
-```just
-set shell := ["zsh", "-uc"]
-```
-
-##### Fish
-
-```just
-set shell := ["fish", "-c"]
-```
-
-##### Nushell
-
-```just
-set shell := ["nu", "-c"]
-```
-
-If you want to change the default table mode to `light`:
-
-```just
-set shell := ['nu', '-m', 'light', '-c']
-```
-
-*[Nushell](https://github.com/nushell/nushell) was written in Rust, and **has cross-platform support for Windows / macOS and Linux**.*
-
-### Documentation Comments
-
-Comments immediately preceding a recipe will appear in `just --list`:
-
-```just
-# build stuff
-build:
-  ./bin/build
-
-# test stuff
-test:
-  ./bin/test
-```
-
-```sh
-$ just --list
-Available recipes:
-    build # build stuff
-    test # test stuff
-```
-
-### Dotenv Integration
-
-If [`dotenv-load`](#dotenv-load) is set, `just` will load environment variables from a file named `.env`. This file can be located in the same directory as your `justfile` or in a parent directory. These variables are environment variables, not `just` variables, and so must be accessed using `$VARIABLE_NAME` in recipes and backticks.
+This is designed as a personal starter kit, but feedback or suggestions for improvements are always welcome!
 
 For example, if your `.env` file contains:
 
