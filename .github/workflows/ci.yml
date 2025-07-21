@@ -27,8 +27,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Setup pnpm
+        run: pnpm/action-setup@v3 # Use the official pnpm action
+        with:
+          version: 'latest' # Or specify a version if needed
+          run_install: false # Prevent automatic install, we'll do it later
 
       - name: Install Node.js Dependencies
         run: pnpm install --frozen-lockfile
