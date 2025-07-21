@@ -54,5 +54,7 @@ class DomainEntityFactory(TestDataFactory[T]):
         return [self.create(spec) for _ in range(count)]
 
     def create_invalid(self, violation_type: str) -> T:
-        # For demonstration, pass an invalid value to the factory
-        return self.default_factory(**{"invalid": violation_type})
+        # Create a valid instance first, then modify it to be invalid
+        # This approach depends on the specific domain entity
+        # Consider making this method abstract or providing entity-specific invalid data
+        raise NotImplementedError("create_invalid should be implemented by specific domain factories")
