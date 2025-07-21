@@ -21,25 +21,17 @@ jobs:
           fetch-depth: 0 # Important for nx affected to compare with base branch
 
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20' # Or your preferred LTS
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3 # Use the official pnpm action
-        with:
-          version: latest          # Pin or use semver range as desired
-          run_install: false       # Prevent automatic install, we'll do it later
-
-      - name: Ensure pnpm is available
-        run: |
-          if ! command -v pnpm; then
-            npm install -g pnpm
-          fi
-          pnpm --version
 
       - name: Install Node.js Dependencies
         run: pnpm install --frozen-lockfile
