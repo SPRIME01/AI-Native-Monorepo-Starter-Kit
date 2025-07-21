@@ -7,7 +7,7 @@
   - Implement global conftest.py with shared pytest configuration and plugins
   - _Requirements: 6.1, 6.5, 8.1_
 
- - [x] 1.1 Create test data factory framework
+- [x] 1.1 Create test data factory framework
   - Implement TestDataFactory base class with generic type support
   - Create DomainEntityFactory for generating test domain objects
   - Build TestDataSpec system for controlling test data generation types
