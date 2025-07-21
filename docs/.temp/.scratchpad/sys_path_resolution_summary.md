@@ -1,7 +1,9 @@
 # sys.path Anti-Pattern Resolution
 
 ## Problem Statement
+
 The codebase contained several instances of `sys.path` manipulation in test files, which is an anti-pattern that:
+
 - Makes tests brittle
 - Can hide dependency issues
 - Creates maintenance problems
@@ -10,6 +12,7 @@ The codebase contained several instances of `sys.path` manipulation in test file
 ## Solution Implemented
 
 ### 1. Project Configuration for Editable Installation
+
 Updated `pyproject.toml` to properly configure the package for editable installation:
 
 ```toml
@@ -31,7 +34,9 @@ build-backend = "setuptools.build_meta"
 ```
 
 ### 2. Editable Installation
+
 Installed the package in editable mode using:
+
 ```bash
 uv pip install -e .
 ```
@@ -39,15 +44,18 @@ uv pip install -e .
 This correctly handles the PYTHONPATH and allows for clean, absolute imports.
 
 ### 3. Removed sys.path Manipulations
+
 Previously fixed files that had `sys.path` anti-patterns:
 
 #### Files Fixed:
+
 - `tests/test_setup.py` - Removed sys.path.append and sys.path.insert
 - `tests/unit/domain/allocation/test_factories.py` - Removed sys.path manipulation
 - `tests/unit/domain/test_payment_value_objects.py` - Removed sys.path manipulation
 - Various other test files in the test suite
 
 #### Before (Anti-pattern):
+
 ```python
 import sys
 import os
@@ -56,12 +64,15 @@ from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregat
 ```
 
 #### After (Clean imports):
+
 ```python
 from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregate
 ```
 
 ### 4. Pytest Configuration
+
 The project already had proper pytest configuration in `pyproject.toml`:
+
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -72,19 +83,23 @@ addopts = "-p no:warnings --cov=libs --cov-report=term-missing"
 ## Results
 
 ### Test Results
+
 - **All 46 tests passing** ✅
 - **Coverage: 52.31%** (above the 50% threshold) ✅
 - **Clean imports working correctly** ✅
 - **No more sys.path manipulations** ✅
 
 ### Verification
+
 Verified that imports work correctly:
+
 ```bash
 python3 -c "from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregate; print('Import successful!')"
 # Output: Import successful!
 ```
 
 ### Test Suite Execution
+
 ```bash
 uv run pytest tests/unit/ -v --disable-warnings
 # Result: ========================= 46 passed, 16 warnings in 12.66s =========================

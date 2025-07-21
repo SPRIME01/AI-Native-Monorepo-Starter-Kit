@@ -1,4 +1,3 @@
-
 # Implementation Plan
 
 - [x] 1. Set up core testing infrastructure and configuration
@@ -13,23 +12,23 @@
   - Build TestDataSpec system for controlling test data generation types
   - _Requirements: 4.5, 7.4, 1.1_
 
- - [x] 1.2 Build mock builder framework
-  - Implement MockBuilder class for systematic dependency mocking
-  - Create ServiceMockBuilder for application service mock generation
-  - Build context manager utilities for dependency injection mocking
-  - _Requirements: 4.2, 2.2, 5.2_
+- [x] 1.2 Build mock builder framework
+- Implement MockBuilder class for systematic dependency mocking
+- Create ServiceMockBuilder for application service mock generation
+- Build context manager utilities for dependency injection mocking
+- _Requirements: 4.2, 2.2, 5.2_
 
- - [x] 2. Implement domain layer testing framework
-  - Create comprehensive test fixtures for domain entities and value objects
-  - Write unit tests for all allocation domain entities and business rules
-  - Implement tests for payment domain logic and value object validation
-  - _Requirements: 1.1, 1.3, 1.5_
+- [x] 2.  Implement domain layer testing framework
+- Create comprehensive test fixtures for domain entities and value objects
+- Write unit tests for all allocation domain entities and business rules
+- Implement tests for payment domain logic and value object validation
+- _Requirements: 1.1, 1.3, 1.5_
 
- - [x] 2.1 Build property-based testing capabilities
-  - Implement DomainPropertyTesting class with Hypothesis strategies
-  - Create property-based tests for domain invariants and business rules
-  - Build stateful testing for complex domain aggregate behavior
-  - _Requirements: 7.1, 7.2, 7.5_
+- [x] 2.1 Build property-based testing capabilities
+- Implement DomainPropertyTesting class with Hypothesis strategies
+- Create property-based tests for domain invariants and business rules
+- Build stateful testing for complex domain aggregate behavior
+- _Requirements: 7.1, 7.2, 7.5_
 
 - [x] 2.2 Create domain entity comprehensive test coverage
   - Write unit tests for inventory domain aggregates and consistency rules
