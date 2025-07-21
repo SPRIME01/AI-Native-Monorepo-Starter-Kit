@@ -17,10 +17,6 @@ Fixtures:
                             entities with controlled test data variations.
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-
 import pytest
 from libs.allocation.domain.factories import (
     AllocationEntityFactory,

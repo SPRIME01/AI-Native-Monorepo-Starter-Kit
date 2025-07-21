@@ -2,16 +2,20 @@
 name = "ai-native-monorepo-starter-kit"
 version = "0.1.0"
 requires-python = ">=3.12"
+description = "AI-Native Monorepo Starter Kit with Hexagonal Architecture"
+readme = "README.md"
+license = {file = "LICENSE"}
 
 [tool.uv]
 
 [tool.pytest.ini_options]
-pythonpath = "."
+testpaths = ["tests"]
 dotenv_files = [".env"]
-addopts = "-p no:warnings"
+addopts = "-p no:warnings --cov=libs --cov-report=term-missing"
 
 [tool.setuptools.packages.find]
-where = ["libs"]
+where = ["."]
+include = ["libs*"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

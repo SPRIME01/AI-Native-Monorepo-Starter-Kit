@@ -1,13 +1,9 @@
 import pytest
 from unittest.mock import patch, mock_open
 import os
-import sys
-import subprocess # Import subprocess
+import subprocess  # Import subprocess
 
-# Add the scripts directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts')))
-
-from setup import run_command, init_nx, init_python_env, install_custom_py_generator, install_pre_commit
+from scripts.setup import run_command, init_nx, init_python_env, install_custom_py_generator, install_pre_commit
 
 @patch('subprocess.run')
 def test_run_command_success(mock_run):

@@ -1,10 +1,6 @@
 """
 Unit tests for Allocation, Payment, and Inventory Entity Factories.
 """
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../')))
-
 import pytest
 from libs.allocation.domain.factories import AllocationEntityFactory, PaymentEntityFactory, InventoryEntityFactory
 from libs.payments.domain.entities.payment import Payment

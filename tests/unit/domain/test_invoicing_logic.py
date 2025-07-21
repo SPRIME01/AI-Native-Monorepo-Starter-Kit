@@ -1,3 +1,14 @@
+def test_invoice_negative_tax():
+    invoice = Invoice(invoice_id="INV-4", amount=100, tax=-10)
+    assert not invoice.is_valid()
+
+def test_invoice_missing_invoice_id():
+    invoice = Invoice(invoice_id=None, amount=100, tax=10)
+    assert not invoice.is_valid()
+
+def test_invoice_empty_invoice_id():
+    invoice = Invoice(invoice_id="", amount=100, tax=10)
+    assert not invoice.is_valid()
 """
 Unit tests for invoicing domain logic and calculation accuracy.
 """

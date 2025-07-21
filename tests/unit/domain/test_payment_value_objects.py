@@ -1,13 +1,8 @@
 """
 Unit tests for payment value object validation.
 """
-import sys
-import os
 import pytest
 from dataclasses import FrozenInstanceError
-
-# Add the project root to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
 
 from libs.payments.domain.entities.payment import Payment
 
