@@ -47,7 +47,7 @@ class AllocationEntityFactory:
         """Create allocation test data with optional overrides."""
         defaults = {
             'order_id': 'ORDER001',
-            'sku': 'PRODUCT001',
+            'product_id': 'PRODUCT001',
             'quantity': 10,
             'batch_ref': 'BATCH001'
         }

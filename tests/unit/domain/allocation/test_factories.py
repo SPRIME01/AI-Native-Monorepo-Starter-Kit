@@ -12,7 +12,7 @@ class TestAllocationEntityFactory:
         entity = factory.create()
         assert isinstance(entity, dict)
         assert entity['order_id'] == 'ORDER001'
-        assert entity['sku'] == 'PRODUCT001'
+        assert entity['product_id'] == 'PRODUCT001'
         assert entity['quantity'] == 10
         assert entity['batch_ref'] == 'BATCH001'
 
@@ -21,7 +21,7 @@ class TestAllocationEntityFactory:
         entity = factory.create(overrides={'order_id': 'ORDER999', 'quantity': 99})
         assert entity['order_id'] == 'ORDER999'
         assert entity['quantity'] == 99
-        assert entity['sku'] == 'PRODUCT001'  # Unchanged
+        assert entity['product_id'] == 'PRODUCT001'  # Unchanged
 
 class TestPaymentEntityFactory:
     def test_create_default(self):
