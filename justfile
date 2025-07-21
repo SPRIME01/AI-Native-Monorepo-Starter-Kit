@@ -326,7 +326,11 @@ ci-services: # Run CI only for deployable services
 
 build-services: # Build all deployable services
     @echo "🐳 Building deployable services..."
-    @if {{NX}} show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$$"))' | head -1 > /dev/null 2>&1; then \
+    @command -v jq >/dev/null 2>&1 || { \
+      echo "❌ jq is required to build services. Please install jq (https://stedolan.github.io/jq/) and try again."; \
+      exit 1; \
+    } \
+    && if {{NX}} show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$$"))' | head -1 > /dev/null 2>&1; then \
         {{NX}} run-many --target=build --projects="tag:deployable:true" --parallel=3; \
         echo "✅ All deployable services built successfully!"; \
     else \
