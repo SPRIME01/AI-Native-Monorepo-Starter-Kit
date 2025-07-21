@@ -1,0 +1,81 @@
+"""
+Unit tests for the Inventory Aggregate.
+"""
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../')))
+
+import pytest
+from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregate
+
+
+class TestInventoryAggregate:
+
+    def test_creation_with_valid_data(self):
+        """Test creating an aggregate with valid data."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=0,
+            location="WAREHOUSE_A"
+        )
+        assert isinstance(aggregate, InventoryAggregate)
+        assert aggregate.is_valid()
+
+    def test_creation_with_negative_quantity_raises_error(self):
+        """Test that creating with negative quantity raises an error."""
+        with pytest.raises(ValueError, match="Quantity cannot be negative"):
+            InventoryAggregate(
+                item_id="ITEM001",
+                quantity=-10,
+                reserved_quantity=0,
+                location="WAREHOUSE_A"
+            )
+
+    def test_allocate_reduces_available_quantity(self):
+        """Test that allocating increases reserved quantity."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=0,
+            location="WAREHOUSE_A"
+        )
+        aggregate.allocate(quantity=30)
+        assert aggregate.reserved_quantity == 30
+        assert aggregate.available_quantity == 70
+
+    def test_cannot_allocate_more_than_available(self):
+        """Test that allocating more than available quantity raises an error."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=10,
+            reserved_quantity=0,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Insufficient available quantity"):
+            aggregate.allocate(quantity=20)
+
+    def test_deallocate_functionality(self):
+        """Test deallocation functionality."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=30,
+            location="WAREHOUSE_A"
+        )
+        aggregate.deallocate(quantity=10)
+        assert aggregate.reserved_quantity == 20
+        assert aggregate.available_quantity == 80
+
+    def test_fulfill_functionality(self):
+        """Test fulfillment functionality."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=30,
+            location="WAREHOUSE_A"
+        )
+        aggregate.fulfill(quantity=10)
+        assert aggregate.quantity == 90
+        assert aggregate.reserved_quantity == 20
+        assert aggregate.available_quantity == 70
