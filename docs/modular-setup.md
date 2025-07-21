@@ -72,7 +72,7 @@ just setup-full
 - **Matplotlib/Seaborn** - Data visualization
 - **Plotly** - Interactive visualizations
 - **Jupyter** - Interactive notebooks
-- **Scipy** - Scientific computing
+- **SciPy** - Scientific computing
 - **Polars** - Fast DataFrames
 
 ### 🛠️ Development (`just setup-dev`)
