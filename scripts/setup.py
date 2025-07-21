@@ -49,7 +49,7 @@ def init_python_env(python_version: str, rust_toolchain_uv_install: bool, root_p
             run_command(["cargo", "install", "uv"])
         else:
             print("Installing uv via pip...")
-            run_command(["pip", "install", "uv"])
+            run_command([sys.executable, "-m", "pip", "install", "uv"])
 
     # Use uv to manage Python version and virtual environment
     print(f"Setting up Python {python_version} environment with uv...")
