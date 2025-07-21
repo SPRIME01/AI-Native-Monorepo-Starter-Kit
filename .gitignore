@@ -170,3 +170,4 @@ kubeconfig
 .github/instructions/nx.instructions.md
 
 .hypothesis/
+.hypothesis/examples/
