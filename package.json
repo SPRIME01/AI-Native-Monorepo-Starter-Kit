@@ -2,11 +2,11 @@
   "devDependencies": {
     "@nxlv/python": "^21.0.3",
     "@playwright/test": "^1.53.2",
-    "jsonc-parser": "^3.3.1",
     "nx": "21.2.2"
   },
   "dependencies": {
     "@nx/playwright": "^21.2.2",
-    "@supabase/supabase-js": "^2.50.3"
+    "@supabase/supabase-js": "^2.50.3",
+    "jsonc-parser": "^3.3.1"
   }
 }
