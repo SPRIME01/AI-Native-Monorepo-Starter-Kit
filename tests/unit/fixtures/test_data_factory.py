@@ -35,11 +35,24 @@ class TestDataFactory(Generic[T], ABC):
         pass
 
 # Example domain entity factory stub (to be extended per domain)
-class DomainEntityFactory(TestDataFactory):
-    def create(self, spec: TestDataSpec = None):
-        # Implement domain-specific creation logic
-        return {}
-    def create_batch(self, count: int, spec: TestDataSpec = None):
-        return [{} for _ in range(count)]
-    def create_invalid(self, violation_type: str):
-        return {"invalid": violation_type}
+
+from typing import Type, Callable
+
+class DomainEntityFactory(TestDataFactory[T]):
+    def __init__(self, entity_cls: Type[T], default_factory: Callable[..., T]):
+        self.entity_cls = entity_cls
+        self.default_factory = default_factory
+
+    def create(self, spec: TestDataSpec = None) -> T:
+        # Use default_factory and apply overrides if provided
+        kwargs = {}
+        if spec and spec.overrides:
+            kwargs.update(spec.overrides)
+        return self.default_factory(**kwargs)
+
+    def create_batch(self, count: int, spec: TestDataSpec = None) -> List[T]:
+        return [self.create(spec) for _ in range(count)]
+
+    def create_invalid(self, violation_type: str) -> T:
+        # For demonstration, pass an invalid value to the factory
+        return self.default_factory(**{"invalid": violation_type})
