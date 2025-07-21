@@ -79,3 +79,36 @@ class TestInventoryAggregate:
         assert aggregate.quantity == 90
         assert aggregate.reserved_quantity == 20
         assert aggregate.available_quantity == 70
+
+    def test_fulfill_with_zero_quantity_raises(self):
+        """Test that fulfilling with zero quantity raises ValueError."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=30,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Quantity must be positive"):
+            aggregate.fulfill(quantity=0)
+
+    def test_fulfill_with_negative_quantity_raises(self):
+        """Test that fulfilling with negative quantity raises ValueError."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=30,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Quantity must be positive"):
+            aggregate.fulfill(quantity=-5)
+
+    def test_fulfill_with_excessive_quantity_raises(self):
+        """Test that fulfilling with more than reserved quantity raises ValueError."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=30,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Cannot fulfill more than reserved quantity"):
+            aggregate.fulfill(quantity=40)
