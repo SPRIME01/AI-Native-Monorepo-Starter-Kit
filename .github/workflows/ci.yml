@@ -34,11 +34,12 @@ jobs:
           version: latest          # Pin or use semver range as desired
           run_install: false       # Prevent automatic install, we'll do it later
 
-      - name: Verify pnpm installation
-        run: pnpm --version
-
-      - name: Install pnpm manually (if needed)
-        run: npm install -g pnpm
+      - name: Ensure pnpm is available
+        run: |
+          if ! command -v pnpm; then
+            npm install -g pnpm
+          fi
+          pnpm --version
 
       - name: Install Node.js Dependencies
         run: pnpm install --frozen-lockfile
