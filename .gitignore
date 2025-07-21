@@ -171,5 +171,5 @@ kubeconfig
 
 .hypothesis/
 .hypothesis/examples/
-.hypothesis/*
+.hypothesis/constants/
 
