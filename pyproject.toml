@@ -62,7 +62,7 @@ cloud = [
 
 # Extended Development Tools
 dev = [
-    "pytest-mock>=3.11.0",
+    "pytest-mock==3.14.1",
     "pytest-xdist>=3.3.0",
     "pytest-dotenv>=0.5.2",
     "hypothesis>=6.82.0",

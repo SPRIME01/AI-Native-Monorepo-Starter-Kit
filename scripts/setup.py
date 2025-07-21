@@ -54,14 +54,41 @@ def init_python_env(python_version: str, rust_toolchain_uv_install: bool, root_p
     # Use uv to manage Python version and virtual environment
     print(f"Setting up Python {python_version} environment with uv...")
 
+    # Check if the specified Python version is available
+    print(f"Checking if Python {python_version} is available...")
+    try:
+        result = run_command(["uv", "python", "list"], "Checking available Python versions...", capture_output=True, check=True)
+        available_versions = result.stdout
+        if python_version not in available_versions:
+            print(f"❌ Error: Python {python_version} is not installed or available to uv.")
+            print(f"💡 Please install Python {python_version} first:")
+            print(f"   - Using uv: uv python install {python_version}")
+            print(f"   - Using pyenv: pyenv install {python_version}")
+            print(f"   - Or install from https://python.org")
+            print(f"Available Python versions:")
+            print(available_versions)
+            sys.exit(1)
+        else:
+            print(f"✅ Python {python_version} is available.")
+    except subprocess.CalledProcessError:
+        print(f"⚠️ Warning: Could not check available Python versions. Proceeding with venv creation...")
+
     # Create/sync virtual environment with uv
     print("Creating virtual environment with uv...")
-    run_command(["uv", "venv", "--python", python_version], check=False)
+    result = run_command(["uv", "venv", "--python", python_version], check=False)
+    if result.returncode != 0:
+        print(f"❌ Error: Failed to create virtual environment with Python {python_version}.")
+        print(f"💡 This usually means Python {python_version} is not installed or not found by uv.")
+        print(f"💡 Please install Python {python_version} and try again:")
+        print(f"   - Using uv: uv python install {python_version}")
+        print(f"   - Using pyenv: pyenv install {python_version}")
+        print(f"   - Or install from https://python.org")
+        sys.exit(1)
 
     # Sync dependencies based on profile
     if profile == "core":
         print("Syncing core dependencies only...")
-        run_command(["uv", "sync"])
+        sync_dependencies(profile)
     elif profile == "full":
         print("Syncing all dependencies...")
         run_command(["uv", "sync", "--all-groups"])
@@ -184,7 +211,23 @@ def update_service_tags(ctx: str, deployable: str):
     if not os.path.exists(project_file):
         print(f"❌ libs/{ctx}/project.json not found.")
         sys.exit(1)
+        def _read_and_update_project_json(project_file: str, deployable: str) -> None:
+            """Read project.json, update deployable tags, and write back to file."""
+            with open(project_file, 'r') as f:
+                data = json.load(f)
 
+            # Initialize tags if not present
+            if 'tags' not in data:
+                data['tags'] = []
+
+            # Remove existing deployable tag
+            data['tags'] = [tag for tag in data['tags'] if not tag.startswith('deployable:')]
+
+            # Add new deployable tag
+            data['tags'].append(f'deployable:{deployable}')
+
+            with open(project_file, 'w') as f:
+                json.dump(data, f, indent=2)
     try:
         with open(project_file, 'r') as f:
             data = json.load(f)
@@ -248,7 +291,6 @@ if __name__ == "__main__":
         if not args.ctx or not args.deployable:
             print("❌ Error: --ctx and --deployable arguments are required for update_service_tags")
             parser.print_help()
-            exit(1)
         update_service_tags(args.ctx, args.deployable)
     else:
         print(f"Unknown action: {args.action}")
