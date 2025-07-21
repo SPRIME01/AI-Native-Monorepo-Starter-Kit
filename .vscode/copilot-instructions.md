@@ -93,7 +93,7 @@ When working with specific technologies or file patterns, also apply these speci
 - **Infrastructure Layer**: `libs/*/infrastructure/` - External adapters and implementations
 
 ### Microservice Architecture
-- Use `just service-split CTX=name` to extract contexts as microservices
+- Use `just service-split CTX=context-name` to extract contexts as microservices
 - Use `just service-merge CTX=name` to merge microservices back to monolith
 - All services deployable via `just deploy-services`
 
