@@ -33,11 +33,11 @@ jobs:
       - name: Install Node.js Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Set up Python with pyenv
-        uses: py-actions/pyenv-action@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11.9' # Match your pyenv global version
-          # cache: true # Optional: cache pyenv builds
+          python-version: '3.11.9'
+          cache: 'pip'
 
       - name: Ensure uv is installed
         run: pip install uv # Or if uv is globally installed, just uv
