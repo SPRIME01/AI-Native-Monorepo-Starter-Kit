@@ -94,8 +94,7 @@ web = [
 
 # Supabase Integration
 supabase = [
-    "supabase==2.16.0",
-    "python-dotenv==1.1.1",
+    "supabase==2.16.0"
 ]
 
 [tool.pytest.ini_options]
