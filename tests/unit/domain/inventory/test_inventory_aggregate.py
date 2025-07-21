@@ -8,6 +8,26 @@ from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregat
 
 class TestInventoryAggregate:
 
+    def test_creation_with_negative_reserved_quantity_raises_error(self):
+        """Test that creating with negative reserved_quantity raises an error."""
+        with pytest.raises(ValueError, match="Reserved quantity cannot be negative"):
+            InventoryAggregate(
+                item_id="ITEM001",
+                quantity=10,
+                reserved_quantity=-5,
+                location="WAREHOUSE_A"
+            )
+
+    def test_creation_with_reserved_quantity_greater_than_quantity_raises_error(self):
+        """Test that creating with reserved_quantity greater than quantity raises an error."""
+        with pytest.raises(ValueError, match="Reserved quantity cannot exceed total quantity"):
+            InventoryAggregate(
+                item_id="ITEM001",
+                quantity=5,
+                reserved_quantity=10,
+                location="WAREHOUSE_A"
+            )
+
     def test_creation_with_valid_data(self):
         """Test creating an aggregate with valid data."""
         aggregate = InventoryAggregate(
