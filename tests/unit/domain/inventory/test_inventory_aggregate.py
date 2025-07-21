@@ -1,9 +1,6 @@
 """
 Unit tests for the Inventory Aggregate.
 """
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../')))
 
 import pytest
 from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregate
@@ -88,7 +85,7 @@ class TestInventoryAggregate:
             reserved_quantity=30,
             location="WAREHOUSE_A"
         )
-        with pytest.raises(ValueError, match="Quantity must be positive"):
+        with pytest.raises(ValueError, match="Fulfillment quantity must be positive"):
             aggregate.fulfill(quantity=0)
 
     def test_fulfill_with_negative_quantity_raises(self):
@@ -99,7 +96,7 @@ class TestInventoryAggregate:
             reserved_quantity=30,
             location="WAREHOUSE_A"
         )
-        with pytest.raises(ValueError, match="Quantity must be positive"):
+        with pytest.raises(ValueError, match="Fulfillment quantity must be positive"):
             aggregate.fulfill(quantity=-5)
 
     def test_fulfill_with_excessive_quantity_raises(self):
@@ -110,5 +107,5 @@ class TestInventoryAggregate:
             reserved_quantity=30,
             location="WAREHOUSE_A"
         )
-        with pytest.raises(ValueError, match="Cannot fulfill more than reserved quantity"):
+        with pytest.raises(ValueError, match="Cannot fulfill more than reserved"):
             aggregate.fulfill(quantity=40)

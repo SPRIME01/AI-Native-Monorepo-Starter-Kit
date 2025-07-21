@@ -3,12 +3,22 @@ Unit tests for allocation domain entity business rules.
 """
 import pytest
 
-# Example stub: Replace with actual Allocation entity import and logic
+
+from libs.allocation.domain.entities.allocation import Allocation
+import uuid
+
 def test_allocation_creation_valid():
     # Arrange
-    allocation_data = {"id": 1, "quantity": 10, "sku": "SKU-1"}
+    allocation_data = {
+        "id": uuid.uuid4(),
+        "order_id": "ORDER-1",
+        "product_id": "SKU-1",
+        "quantity": 10,
+        "status": "active"
+    }
     # Act
-    allocation = allocation_data  # Replace with Allocation(**allocation_data)
+    allocation = Allocation(**allocation_data)
     # Assert
-    assert allocation["quantity"] > 0
-    assert allocation["sku"] == "SKU-1"
+    assert allocation.quantity > 0
+    assert allocation.product_id == "SKU-1"
+    assert allocation.is_valid()

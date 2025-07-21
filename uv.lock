@@ -9,11 +9,16 @@ source = { editable = "." }
 
 [package.optional-dependencies]
 dev = [
+    { name = "hypothesis" },
     { name = "mypy" },
+    { name = "numpy" },
     { name = "pre-commit" },
+    { name = "psycopg2-binary" },
     { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "pytest-dotenv" },
     { name = "pytest-mock" },
+    { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "uv" },
 ]
@@ -22,37 +27,24 @@ supabase = [
     { name = "supabase" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "hypothesis" },
-    { name = "numpy" },
-    { name = "psycopg2-binary" },
-    { name = "pytest-cov" },
-    { name = "pytest-xdist" },
-]
-
 [package.metadata]
 requires-dist = [
+    { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.136.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.16.1" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=2.3.1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.2.0" },
+    { name = "psycopg2-binary", marker = "extra == 'dev'", specifier = ">=2.9.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==8.4.1" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.2.1" },
     { name = "pytest-dotenv", marker = "extra == 'dev'", specifier = "==0.5.2" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = "==3.14.1" },
+    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.8.0" },
     { name = "python-dotenv", marker = "extra == 'supabase'", specifier = "==1.1.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.12.2" },
     { name = "supabase", marker = "extra == 'supabase'", specifier = "==2.16.0" },
     { name = "uv", marker = "extra == 'dev'", specifier = "==0.7.19" },
 ]
 provides-extras = ["dev", "supabase"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "hypothesis", specifier = ">=6.136.1" },
-    { name = "numpy", specifier = ">=2.3.1" },
-    { name = "psycopg2-binary", specifier = ">=2.9.10" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "pytest-xdist", specifier = ">=3.8.0" },
-]
 
 [[package]]
 name = "annotated-types"
