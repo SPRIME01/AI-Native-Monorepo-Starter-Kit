@@ -19,7 +19,7 @@ class InventoryEntityFactory:
         }
 
         if overrides:
-            defaults.update(overrides)
+            defaults |= overrides
 
         return InventoryAggregate(**defaults)
 
