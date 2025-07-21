@@ -66,11 +66,7 @@ uv sync --all-extras
 ### Installing Dependencies
 ```bash
 # Install dev dependencies
-uv sync --all-extras
-
-# Install specific groups
-uv sync --group testing
-uv sync --group lint
+uv sync --group dev
 ```
 
 ### Running Commands
