@@ -40,7 +40,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11.9'
-          cache: 'pip'
 
       - name: Ensure uv is installed
         run: pip install uv # Or if uv is globally installed, just uv
