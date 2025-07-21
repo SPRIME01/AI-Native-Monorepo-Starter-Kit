@@ -35,7 +35,7 @@ class PaymentEntityFactory:
         }
 
         if overrides:
-            defaults.update(overrides)
+            defaults |= overrides
 
         return Payment(**defaults)
 
