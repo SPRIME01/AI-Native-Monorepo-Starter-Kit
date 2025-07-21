@@ -7,6 +7,27 @@ from libs.inventory.domain.entities.inventory_aggregate import InventoryAggregat
 
 
 class TestInventoryAggregate:
+    def test_allocate_zero_quantity_raises(self):
+        """Test that allocating zero quantity raises ValueError."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=0,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Allocation quantity must be positive"):
+            aggregate.allocate(quantity=0)
+
+    def test_allocate_negative_quantity_raises(self):
+        """Test that allocating negative quantity raises ValueError."""
+        aggregate = InventoryAggregate(
+            item_id="ITEM001",
+            quantity=100,
+            reserved_quantity=0,
+            location="WAREHOUSE_A"
+        )
+        with pytest.raises(ValueError, match="Allocation quantity must be positive"):
+            aggregate.allocate(quantity=-10)
 
     def test_allocate_zero_quantity_raises(self):
         """Test that allocating zero quantity raises ValueError."""
