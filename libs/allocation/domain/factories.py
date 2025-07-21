@@ -53,6 +53,6 @@ class AllocationEntityFactory:
         }
 
         if overrides:
-            defaults.update(overrides)
+            defaults |= overrides
 
         return defaults
