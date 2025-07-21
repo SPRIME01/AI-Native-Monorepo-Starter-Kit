@@ -44,8 +44,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install uv
-        run: pip install uv
+
+
+      - name: Install uv (official script)
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "export PATH=\"$HOME/.local/bin:$PATH\"" >> $GITHUB_ENV
 
       - name: Install Python dependencies
         run: uv sync --all-extras
