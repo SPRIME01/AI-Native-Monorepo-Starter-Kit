@@ -45,7 +45,7 @@ jobs:
         run: pip install uv # Or if uv is globally installed, just uv
 
       - name: Install Root Python Dev Dependencies
-        run: uv sync --all-extras --dev . # Install all extras and dev dependencies
+        run: uv sync --all-extras --dev # Install all extras and dev dependencies
 
       - name: Restore Nx Cache
         uses: actions/cache/restore@v4
