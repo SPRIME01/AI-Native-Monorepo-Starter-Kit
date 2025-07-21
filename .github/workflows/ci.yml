@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: 0 # Important for nx affected to compare with base branch
 
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -32,6 +33,12 @@ jobs:
         with:
           version: latest          # Pin or use semver range as desired
           run_install: false       # Prevent automatic install, we'll do it later
+
+      - name: Verify pnpm installation
+        run: pnpm --version
+
+      - name: Install pnpm manually (if needed)
+        run: npm install -g pnpm
 
       - name: Install Node.js Dependencies
         run: pnpm install --frozen-lockfile
