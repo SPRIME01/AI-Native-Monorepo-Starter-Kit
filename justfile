@@ -469,8 +469,8 @@ create-service-app CTX TRANSPORT: # Internal: Create service application structu
     @echo '"""' >> "apps/{{CTX}}-svc/src/main.py"
     @if [ "{{TRANSPORT}}" = "fastapi" ]; then \
         echo "from fastapi import FastAPI, Depends" >> "apps/{{CTX}}-svc/src/main.py"; \
-        echo "from libs.{{CTX}}.application.{{CTX}}_service import $$(echo {{CTX}} | sed 's/.*/\\u&/')Service" >> "apps/{{CTX}}-svc/src/main.py"; \
-        echo "from libs.{{CTX}}.adapters.memory_adapter import Memory$$(echo {{CTX}} | sed 's/.*/\\u&/')Adapter" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "from libs.{{CTX}}.application.{{CTX}}_service import $$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}')Service" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "from libs.{{CTX}}.adapters.memory_adapter import Memory$$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}')Adapter" >> "apps/{{CTX}}-svc/src/main.py"; \
         echo "" >> "apps/{{CTX}}-svc/src/main.py"; \
         echo "app = FastAPI(" >> "apps/{{CTX}}-svc/src/main.py"; \
-        echo "    title=\"$$(echo {{CTX}} | sed 's/.*/\\u&/') Service\",
+        echo "    title=\"$$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}') Service\",
