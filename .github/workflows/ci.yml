@@ -60,3 +60,8 @@ jobs:
       # Run affected targets
       - name: Run affected lint, test, and build
         run: pnpm nx affected -t lint test build
+
+      # Fix CI step - must run at the end with if: always()
+      - name: Fix CI
+        run: npx nx-cloud fix-ci
+        if: always()
