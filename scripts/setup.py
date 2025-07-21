@@ -75,7 +75,6 @@ def install_custom_py_generator(custom_py_gen_plugin_name: str):
     print("📦 Installing custom Python generator plugin...")
 
     # Create the tools/generators directory structure for the custom generators
-    import shutil
     import os
     import json
 
