@@ -1,11 +1,11 @@
 {
   "generators": {
-    "shared-python-app": {
+    "shared-python-tools:shared-python-app": {
       "factory": "./tools/generators/shared-python-app/generator",
       "schema": "./tools/generators/shared-python-app/schema.json",
       "description": "Generate a Python application with custom settings"
     },
-    "shared-python-lib": {
+    "shared-python-tools:shared-python-lib": {
       "factory": "./tools/generators/shared-python-lib/generator",
       "schema": "./tools/generators/shared-python-lib/schema.json",
       "description": "Generate a Python library with custom settings"

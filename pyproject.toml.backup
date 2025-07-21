@@ -1,0 +1,16 @@
+
+[project]
+name = "monorepo-dev-env"
+version = "0.0.1"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "uv"
+]
+
+[build-system]
+requires = ["uv>=0.1.0"]
+build-backend = "setuptools.build_meta"

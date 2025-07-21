@@ -1,28 +1,12 @@
 # ╔═══════════════════════════════════════════════════════════════╗
 # ║                AI-Native Monorepo Orchestration               ║
 # ║  Hexagonal/DDD Nx workspace with Python, ML, and Cloud       ║
-# ║  Built bububuilbuild-build-services: # Build all deployable services
-    @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')": # Build all deployable services
-    @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"
-
-lint: # Lint all affected projects
-    @echo "🔎 Linting affected projects..."
-    {{NX}} affected --target=lint --base=main --parallel=3n3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"es: # Build all deployable services
-    @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"
-
-lint: # Lint all affected projectses: # Build all deployable services
-    @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"ices: # Build all deployable services
-    @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"amlined one-person dev workflow               ║
+# ║  Built for streamlined one-person dev workflow               ║
 # ║  🔄 Reversible Microservice Architecture Support             ║
 # ╚═══════════════════════════════════════════════════════════════╝
 
 # Cross-platform shell configuration
-set shell := if os() == "windows" { ["powershell.exe", "-c"] } else { ["bash", "-c"] }
+set shell := ["bash", "-c"]
 
 # Tool shortcuts and defaults
 NX := "npx nx"
@@ -39,7 +23,7 @@ SCALE_TARGET := "70"                          # HPA CPU target percentage
 # ==============================================================================
 # Configuration Variables - Adjust as needed
 # ==============================================================================
-PYTHON_VERSION := "3.11.9"
+PYTHON_VERSION := "3.12"
 NX_PYTHON_PLUGIN_VERSION := "21.0.3"
 RUST_TOOLCHAIN_UV_INSTALL := "false"
 CUSTOM_PY_GEN_PLUGIN_NAME := "shared-python-tools"
@@ -86,18 +70,110 @@ help: # Show this help menu
 # Initial Setup and Environment Management
 # ==============================================================================
 
-setup: init-nx init-python-env install-custom-py-generator install-service-generators install-pre-commit # Initial one-time setup of the monorepo
-    @echo "🚀 Monorepo setup complete! Run 'just help' for available commands."
+# Core setup - lightweight installation with essentials only
+setup: init-nx init-python-env-core install-custom-py-generator install-service-generators install-pre-commit
+    @echo "🚀 Core monorepo setup complete!"
+    @echo "📦 To install additional components:"
+    @echo "  • AI/ML tools:     just setup-ai"
+    @echo "  • Cloud tools:     just setup-cloud"
+    @echo "  • Analytics:       just setup-analytics"
+    @echo "  • All extras:      just setup-full"
+    @echo "  • Help:            just help-setup"
+
+# Full setup - everything included
+setup-full: setup setup-ai setup-cloud setup-analytics setup-dev setup-database setup-web setup-supabase
+    @echo "🚀 Full monorepo setup complete with all components!"
+
+# Core Python environment (lightweight)
+init-python-env-core:
+    @echo "🐍 Setting up core Python environment..."
+    @python3 scripts/setup.py init_python_env --python-version={{PYTHON_VERSION}} --root-pyproject-toml={{ROOT_PYPROJECT_TOML}} --monorepo-root={{MONOREPO_ROOT}} --profile=core
+
+# Full Python environment (all dependencies)
+init-python-env-full:
+    @echo "🐍 Setting up full Python environment with all dependencies..."
+    @python3 scripts/setup.py init_python_env --python-version={{PYTHON_VERSION}} --root-pyproject-toml={{ROOT_PYPROJECT_TOML}} --monorepo-root={{MONOREPO_ROOT}} --profile=full
 
 init-nx: # Initialize Nx workspace
     @python3 scripts/setup.py init_nx --nx-python-plugin-version={{NX_PYTHON_PLUGIN_VERSION}}
 
-init-python-env: # Initialize/update Python environment (.venv)
-    @python3 scripts/setup.py init_python_env --python-version={{PYTHON_VERSION}} --root-pyproject-toml={{ROOT_PYPROJECT_TOML}} --monorepo-root={{MONOREPO_ROOT}}
+# Modular Component Installation
+# ==============================================================================
+
+setup-ai: # Install AI/ML dependencies (PyTorch, Transformers, etc.)
+    @echo "🤖 Installing AI/ML dependencies..."
+    @uv sync --group ai
+
+setup-cloud: # Install cloud and infrastructure dependencies
+    @echo "☁️ Installing cloud dependencies..."
+    @uv sync --group cloud
+
+setup-analytics: # Install analytics and data science dependencies
+    @echo "📊 Installing analytics dependencies..."
+    @uv sync --group analytics
+
+setup-dev: # Install development and testing tools
+    @echo "🛠️ Installing development tools..."
+    @uv sync --group dev
+
+setup-database: # Install database dependencies
+    @echo "🗄️ Installing database dependencies..."
+    @uv sync --group database
+
+setup-web: # Install web/API dependencies
+    @echo "🌐 Installing web/API dependencies..."
+    @uv sync --group web
+
+setup-supabase: # Install Supabase dependencies
+    @echo "🚀 Installing Supabase dependencies..."
+    @uv sync --group supabase
+
+help-setup: # Show available setup options
+    @echo "🔧 Available Setup Commands:"
+    @echo ""
+    @echo "Core Setup:"
+    @echo "  just setup           - Lightweight core installation"
+    @echo "  just setup-full      - Complete installation with all components"
+    @echo ""
+    @echo "Component Installation:"
+    @echo "  just setup-ai        - AI/ML tools (PyTorch, Transformers, Scikit-learn)"
+    @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Terraform)"
+    @echo "  just setup-analytics - Analytics (Pandas, NumPy, Jupyter, Matplotlib)"
+    @echo "  just setup-dev       - Development tools (Testing, Linting, Formatting)"
+    @echo "  just setup-database  - Database tools (SQLModel, PostgreSQL, Redis)"
+    @echo "  just setup-web       - Web/API tools (FastAPI, Uvicorn, Pydantic)"
+    @echo "  just setup-supabase  - Supabase integration"
+    @echo ""
+    @echo "Environment Management:"
+    @echo "  just clean-env       - Clean Python environment"
+    @echo "  just reinstall       - Clean install core components"
+    @echo "  just reinstall-full  - Clean install all components"
+
+clean-env: # Clean Python environment
+    @echo "🧹 Cleaning Python environment..."
+    @rm -rf .venv
+    @echo "✅ Environment cleaned. Run setup commands to reinstall."
+
+reinstall: clean-env setup # Clean install core components
+    @echo "♻️ Clean reinstall completed!"
+
+reinstall-full: clean-env setup-full # Clean install everything
+    @echo "♻️ Clean full reinstall completed!"
+
+# Legacy/Compatibility Commands
+# ==============================================================================
+
+init-python-env: init-python-env-core # Backward compatibility
 
 install-custom-py-generator: # Install custom Python generators
     @echo "🔧 Installing custom Python generators..."
-    @python3 scripts/setup.py install_custom_py_generator --custom-py-gen-plugin-name={{CUSTOM_PY_GEN_PLUGIN_NAME}}
+    @if [ -f ".make_assets/setup_helper.sh" ]; then \
+        echo "🔧 Using legacy setup_helper.sh (if available)..."; \
+        bash ./.make_assets/setup_helper.sh install_custom_py_generator {{CUSTOM_PY_GEN_PLUGIN_NAME}}; \
+    else \
+        echo "🔧 setup_helper.sh not found, using Python-based installation..."; \
+        python3 scripts/setup.py install_custom_py_generator --custom-py-gen-plugin-name={{CUSTOM_PY_GEN_PLUGIN_NAME}}; \
+    fi
 
 install-service-generators: # Install service architecture generators
     @echo "🔧 Installing service architecture generators..."
@@ -142,34 +218,54 @@ context-new CTX: # Create DDD context with hexagonal architecture
 service-split CTX TRANSPORT='fastapi': # Extract context to microservice
     @echo "🔧 Extracting context '{{CTX}}' to microservice with {{TRANSPORT}} transport..."
     @echo "📋 Checking if context exists..."
-    @python3 scripts/justfile_helper.py check-context --ctx {{CTX}} || (echo "❌ Context {{CTX}} not found. Run 'just context-new CTX={{CTX}}' first." && exit 1)
+    @if [ ! -d "libs/{{CTX}}" ]; then \
+        echo "❌ Context {{CTX}} not found. Run 'just context-new CTX={{CTX}}' first."; \
+        exit 1; \
+    fi
     @echo "🏗️ Creating microservice application structure..."
-    @python3 scripts/justfile_helper.py create-service-app --ctx {{CTX}} --transport {{TRANSPORT}}
+    @just create-service-app CTX={{CTX}} TRANSPORT={{TRANSPORT}}
     @echo "🐳 Generating container configuration..."
-    @python3 scripts/justfile_helper.py create-service-container --ctx {{CTX}}
+    @just create-service-container CTX={{CTX}}
     @echo "☸️ Generating Kubernetes manifests..."
-    @python3 scripts/justfile_helper.py create-service-k8s --ctx {{CTX}}
+    @just create-service-k8s CTX={{CTX}}
     @echo "🏷️ Updating deployment tags..."
-    @python3 scripts/justfile_helper.py update-service-tags --ctx {{CTX}} --deployable true
+    @just update-service-tags CTX={{CTX}} DEPLOYABLE=true
     @echo "✅ Context {{CTX}} extracted to microservice at apps/{{CTX}}-svc/"
     @echo "💡 Deploy with: just deploy-service CTX={{CTX}}"
 
 service-merge CTX: # Merge microservice back to monolith
     @echo "🔄 Merging microservice '{{CTX}}' back to monolith..."
     @echo "📋 Checking if service exists..."
-    @python3 scripts/justfile_helper.py check-service --ctx {{CTX}} || (echo "❌ Service {{CTX}}-svc not found. Nothing to merge." && exit 1)
+    @if [ ! -d "apps/{{CTX}}-svc" ]; then \
+        echo "❌ Service {{CTX}}-svc not found. Nothing to merge."; \
+        exit 1; \
+    fi
     @echo "🗑️ Removing service application..."
-    @python3 scripts/justfile_helper.py remove-service --ctx {{CTX}}
+    @rm -rf "apps/{{CTX}}-svc"
     @echo "🏷️ Updating deployment tags..."
-    @python3 scripts/justfile_helper.py update-service-tags --ctx {{CTX}} --deployable false
+    @just update-service-tags CTX={{CTX}} DEPLOYABLE=false
     @echo "✅ Service {{CTX}} merged back to monolith."
     @echo "💡 Context libs/{{CTX}} remains unchanged - zero code impact!"
 
 service-status: # Show deployment status of all contexts
-    @python3 scripts/justfile_helper.py service-status
+    @echo "📊 Context Deployment Status:"
+    @echo "════════════════════════════════════════════════════════════════"
+    @for ctx_dir in libs/*/; do \
+        if [ -d "$$ctx_dir" ]; then \
+            ctx=$$(basename "$$ctx_dir"); \
+            if [ -f "$$ctx_dir/project.json" ]; then \
+                deployable=$$(grep -o '"deployable:[^"]*"' "$$ctx_dir/project.json" | cut -d: -f2 | tr -d '"' || echo "false"); \
+                service_exists="❌"; \
+                if [ -d "apps/$$ctx-svc" ]; then service_exists="✅"; fi; \
+                printf "  %-20s deployable:%-8s service:%-3s\n" "$$ctx" "$$deployable" "$$service_exists"; \
+            fi; \
+        fi; \
+    done
+    @echo "════════════════════════════════════════════════════════════════"
 
 service-list: # List all deployable services
-    @python3 scripts/justfile_helper.py service-list
+    @echo "🚀 Deployable Services:"
+    @{{NX}} show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$"))' | sort || find apps -name "*-svc" -type d | sed 's|apps/||g' | sort
 
 # ==============================================================================
 # AI/ML Model Lifecycle Management
@@ -230,7 +326,12 @@ ci-services: # Run CI only for deployable services
 
 build-services: # Build all deployable services
     @echo "🐳 Building deployable services..."
-    @python3 -c "import subprocess, os; services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; subprocess.run(['npx', 'nx', 'run-many', '--target=build', '--projects=tag:deployable:true', '--parallel=3']) if services else print('ℹ️  No deployable services found. Use \\'just service-split CTX=<name>\\' to create some.')"
+    @if {{NX}} show projects --json 2>/dev/null | jq -r '.[] | select(test("-svc$$"))' | head -1 > /dev/null 2>&1; then \
+        {{NX}} run-many --target=build --projects="tag:deployable:true" --parallel=3; \
+        echo "✅ All deployable services built successfully!"; \
+    else \
+        echo "ℹ️  No deployable services found. Use 'just service-split CTX=<name>' to create some."; \
+    fi
 
 lint: # Lint all affected projects
     @echo "🔎 Linting affected projects..."
@@ -267,14 +368,17 @@ containerize PROJECT: # Build Docker image for project
 
 build-service-images: # Build Docker images for all deployable services
     @echo "🐳 Building Docker images for all deployable services..."
-    @python3 -c " \
-import subprocess, os; \
-services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; \
-[print(f'🔨 Building image for {svc}...') or subprocess.run(['npx', 'nx', 'run', f'{svc}:docker'], check=False) for svc in services] if services else print('ℹ️  No services found to build')"
+    @for svc in $$(find apps -name "*-svc" -type d | sed 's|apps/||g'); do \
+        echo "🔨 Building image for $$svc..."; \
+        {{NX}} run $$svc:docker || echo "⚠️  Failed to build $$svc"; \
+    done
 
 deploy-service CTX: # Deploy specific service to Kubernetes
     @echo "🚀 Deploying service {{CTX}} to Kubernetes..."
-    @python3 scripts/justfile_helper.py check-service --ctx {{CTX}} || (echo "❌ Service {{CTX}}-svc not found. Run 'just service-split CTX={{CTX}}' first." && exit 1)
+    @if [ ! -d "apps/{{CTX}}-svc" ]; then \
+        echo "❌ Service {{CTX}}-svc not found. Run 'just service-split CTX={{CTX}}' first."; \
+        exit 1; \
+    fi
     @echo "🐳 Building service image..."
     {{NX}} run {{CTX}}-svc:docker
     @echo "☸️ Applying Kubernetes manifests..."
@@ -283,10 +387,10 @@ deploy-service CTX: # Deploy specific service to Kubernetes
 
 deploy-services: # Deploy all deployable services to Kubernetes
     @echo "🚀 Deploying all deployable services to Kubernetes..."
-    @python3 -c " \
-import subprocess, os; \
-services = [d.name for d in os.scandir('apps') if d.is_dir() and d.name.endswith('-svc')]; \
-[print(f'🚀 Deploying {svc}...') or subprocess.run(['just', 'deploy-service', f'CTX={svc[:-4]}'], check=False) for svc in services] if services else print('ℹ️  No services found to deploy')"
+    @for svc in $$(find apps -name "*-svc" -type d | sed 's|apps/||g'); do \
+        echo "🚀 Deploying $$svc..."; \
+        just deploy-service CTX=$${svc%-svc} || echo "⚠️  Failed to deploy $$svc"; \
+    done
 
 scale-service CTX REPLICAS: # Scale service replicas
     @echo "📈 Scaling service {{CTX}} to {{REPLICAS}} replicas..."
@@ -329,12 +433,38 @@ doctor: # Verify workspace constraints and generate dependency graph
 
 tree: # Pretty-print current workspace layout
     @echo "📁 Current workspace structure:"
-    @python3 -c " \
-import os, subprocess; \
-try: subprocess.run(['tree', '-I', 'node_modules|__pycache__|*.pyc|.pytest_cache|.nx|dist', '-L', '3'], check=True) \
-except: [print(f'./{p}') for p in sorted([os.path.relpath(r, '.') for r, d, f in os.walk('.') if not any(x in r for x in ['node_modules', '__pycache__', '.nx', 'dist'])][1:51])]"
+    @if command -v tree >/dev/null 2>&1; then \
+        tree -I 'node_modules|__pycache__|*.pyc|.pytest_cache|.nx|dist' -L 3; \
+    else \
+        find . -type d -name 'node_modules' -prune -o -type d -name '__pycache__' -prune -o -type d -name '.nx' -prune -o -type d -name 'dist' -prune -o -type d -print | head -50; \
+    fi
 
 clean: # Clean build artifacts and caches (use with caution)
     @echo "🗑️ Cleaning Nx cache, node_modules, and Python environments..."
-    @python3 scripts/justfile_helper.py clean --targets nx node_modules python venv
+    {{NX}} reset
+    rm -rf node_modules .venv
+    find . -name ".nx" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -name "dist" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -name "*.pyc" -delete 2>/dev/null || true
+    find . -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
     @echo "✅ Cleanup complete. You may need to run 'just setup' again."
+
+# ==============================================================================
+# 🔧 Internal Service Management Helpers
+# ==============================================================================
+
+create-service-app CTX TRANSPORT: # Internal: Create service application structure
+    @echo "🏗️ Creating service application for {{CTX}}..."
+    @mkdir -p "apps/{{CTX}}-svc/src"
+    @echo '"""' > "apps/{{CTX}}-svc/src/main.py"
+    @echo "{{CTX}} Microservice - Auto-generated service wrapper" >> "apps/{{CTX}}-svc/src/main.py"
+    @echo "Exposes libs/{{CTX}} domain logic via {{TRANSPORT}} transport" >> "apps/{{CTX}}-svc/src/main.py"
+    @echo '"""' >> "apps/{{CTX}}-svc/src/main.py"
+    @if [ "{{TRANSPORT}}" = "fastapi" ]; then \
+        echo "from fastapi import FastAPI, Depends" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "from libs.{{CTX}}.application.{{CTX}}_service import $$(echo {{CTX}} | sed 's/.*/\\u&/')Service" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "from libs.{{CTX}}.adapters.memory_adapter import Memory$$(echo {{CTX}} | sed 's/.*/\\u&/')Adapter" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "app = FastAPI(" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "    title=\"$$(echo {{CTX}} | sed 's/.*/\\u&/') Service\",
