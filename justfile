@@ -139,7 +139,6 @@ help-setup: # Show available setup options
     @echo "Component Installation:"
     @echo "  just setup-ai        - AI/ML tools (PyTorch, Transformers, Scikit-learn)"
     @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Pulumi)"
-    @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Pulumi)"
     @echo "  just setup-analytics - Analytics (Pandas, NumPy, Jupyter, Matplotlib)"
     @echo "  just setup-dev       - Development tools (Testing, Linting, Formatting)"
     @echo "  just setup-database  - Database tools (SQLModel, PostgreSQL, Redis)"
@@ -460,8 +459,6 @@ clean: # Clean build artifacts and caches (use with caution)
     find "$PROJECT_ROOT" -name "*.pyc" -delete 2>/dev/null || true
     find "$PROJECT_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
     @echo "✅ Cleanup complete. You may need to run 'just setup' again."
-    find "$PROJECT_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
-    @echo "✅ Cleanup complete. You may need to run 'just setup' again."
 
 # ==============================================================================
 # 🔧 Internal Service Management Helpers
@@ -480,4 +477,50 @@ create-service-app CTX TRANSPORT: # Internal: Create service application structu
         echo "from libs.{{CTX}}.adapters.memory_adapter import Memory$$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}')Adapter" >> "apps/{{CTX}}-svc/src/main.py"; \
         echo "" >> "apps/{{CTX}}-svc/src/main.py"; \
         echo "app = FastAPI(" >> "apps/{{CTX}}-svc/src/main.py"; \
-        echo "    title=\"$$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}') Service\",
+        echo "    title=\"$$(echo {{CTX}} | awk '{print toupper(substr($$0,1,1)) tolower(substr($$0,2))}') Service\"," >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo ")" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "if __name__ == \"__main__\":" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "    import uvicorn" >> "apps/{{CTX}}-svc/src/main.py"; \
+        echo "    uvicorn.run(app, host=\"0.0.0.0\", port=8000)" >> "apps/{{CTX}}-svc/src/main.py"; \
+    fi
+    @echo "✅ Service application structure created for {{CTX}}."
+
+create-service-container CTX: # Internal: Generate Docker configuration
+    @echo "🐳 Creating Docker configuration for {{CTX}}..."
+    @mkdir -p "apps/{{CTX}}-svc"
+    @echo "FROM python:3.12-slim" > "apps/{{CTX}}-svc/Dockerfile"
+    @echo "WORKDIR /app" >> "apps/{{CTX}}-svc/Dockerfile"
+    @echo "COPY . ." >> "apps/{{CTX}}-svc/Dockerfile"
+    @echo "RUN pip install -e ." >> "apps/{{CTX}}-svc/Dockerfile"
+    @echo "EXPOSE 8000" >> "apps/{{CTX}}-svc/Dockerfile"
+    @echo "CMD [\"uvicorn\", \"src.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]" >> "apps/{{CTX}}-svc/Dockerfile"
+    @echo "✅ Docker configuration created for {{CTX}}."
+
+create-service-k8s CTX: # Internal: Generate Kubernetes manifests
+    @echo "☸️ Creating Kubernetes manifests for {{CTX}}..."
+    @mkdir -p "apps/{{CTX}}-svc/k8s"
+    @echo "apiVersion: apps/v1" > "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "kind: Deployment" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "metadata:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "  name: {{CTX}}-svc" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "spec:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "  replicas: 1" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "  selector:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "    matchLabels:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "      app: {{CTX}}-svc" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "  template:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "    metadata:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "      labels:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "        app: {{CTX}}-svc" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "    spec:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "      containers:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "      - name: {{CTX}}-svc" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "        image: {{CONTAINER_REGISTRY}}/{{CTX}}-svc:latest" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "        ports:" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "        - containerPort: 8000" >> "apps/{{CTX}}-svc/k8s/deployment.yaml"
+    @echo "✅ Kubernetes manifests created for {{CTX}}."
+
+update-service-tags CTX DEPLOYABLE: # Internal: Update deployable tags for a context
+    @echo "🏷️ Updating deployable tags for context {{CTX}} to {{DEPLOYABLE}}..."
+    @python3 scripts/setup.py update_service_tags --ctx={{CTX}} --deployable={{DEPLOYABLE}}
