@@ -123,43 +123,31 @@ def install_custom_py_generator(custom_py_gen_plugin_name: str):
 
         generators_installed = 0
 
+
+        def install_generator(src_name, dest_name, description):
+            src = os.path.join(make_assets_dir, src_name)
+            dest = os.path.join(tools_generators_dir, dest_name)
+            if os.path.exists(src):
+                try:
+                    if os.path.exists(dest):
+                        shutil.rmtree(dest)
+                        print(f"🗑️  Removed existing generator: {dest}")
+                    shutil.copytree(src, dest)
+                    print(f"✅ Installed {description} generator to {dest}")
+                    return True
+                except Exception as e:
+                    print(f"❌ Error installing {description} generator: {e}")
+            else:
+                print(f"⚠️  Source generator not found: {src}")
+                print(f"💡 This generator is needed for creating {description}.")
+            return False
+
         # Install shared-python-app generator
-        app_generator_src = os.path.join(make_assets_dir, "shared-python-app")
-        app_generator_dest = os.path.join(tools_generators_dir, "shared-python-app")
-
-        if os.path.exists(app_generator_src):
-            try:
-                if os.path.exists(app_generator_dest):
-                    shutil.rmtree(app_generator_dest)
-                    print(f"🗑️  Removed existing generator: {app_generator_dest}")
-
-                shutil.copytree(app_generator_src, app_generator_dest)
-                print(f"✅ Installed shared-python-app generator to {app_generator_dest}")
-                generators_installed += 1
-            except Exception as e:
-                print(f"❌ Error installing shared-python-app generator: {e}")
-        else:
-            print(f"⚠️  Source generator not found: {app_generator_src}")
-            print("💡 This generator is needed for creating Python applications.")
-
+        if install_generator("shared-python-app", "shared-python-app", "shared-python-app"):
+            generators_installed += 1
         # Install shared-python-lib generator
-        lib_generator_src = os.path.join(make_assets_dir, "shared-python-lib")
-        lib_generator_dest = os.path.join(tools_generators_dir, "shared-python-lib")
-
-        if os.path.exists(lib_generator_src):
-            try:
-                if os.path.exists(lib_generator_dest):
-                    shutil.rmtree(lib_generator_dest)
-                    print(f"🗑️  Removed existing generator: {lib_generator_dest}")
-
-                shutil.copytree(lib_generator_src, lib_generator_dest)
-                print(f"✅ Installed shared-python-lib generator to {lib_generator_dest}")
-                generators_installed += 1
-            except Exception as e:
-                print(f"❌ Error installing shared-python-lib generator: {e}")
-        else:
-            print(f"⚠️  Source generator not found: {lib_generator_src}")
-            print("💡 This generator is needed for creating Python libraries.")
+        if install_generator("shared-python-lib", "shared-python-lib", "shared-python-lib"):
+            generators_installed += 1
 
         if generators_installed == 0:
             print("❌ No generators were installed successfully.")
