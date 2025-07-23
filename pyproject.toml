@@ -104,7 +104,7 @@ addopts = "-p no:warnings --cov=libs --cov-report=term-missing"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["libs*"]
+include = ["libs*", "scripts*"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
