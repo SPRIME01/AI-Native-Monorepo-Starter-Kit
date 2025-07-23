@@ -1,11 +1,13 @@
 # Migration from pyenv to uv
 
 ## Overview
+
 This project has been migrated from pyenv to uv for Python version and dependency management. This provides better performance, reproducible environments, and simpler tooling.
 
 ## What Changed
 
 ### Before (pyenv + pip)
+
 ```bash
 pyenv install 3.11.9
 pyenv local 3.11.9
@@ -15,6 +17,7 @@ pip install -r requirements.txt
 ```
 
 ### After (uv only)
+
 ```bash
 uv venv --python 3.12
 uv sync --all-extras
@@ -23,6 +26,7 @@ uv sync --all-extras
 ## Installation & Setup
 
 ### 1. Install uv
+
 ```bash
 # macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -35,6 +39,7 @@ pip install uv
 ```
 
 ### 2. Initialize Project
+
 ```bash
 # One-time setup
 just setup
@@ -47,16 +52,19 @@ uv sync --all-extras
 ## Key Benefits
 
 ### Performance
+
 - **10-100x faster** dependency resolution
 - **Parallel downloads** and installs
 - **Intelligent caching**
 
 ### Reproducibility
+
 - **Lock files** ensure exact versions
 - **Cross-platform compatibility**
 - **Deterministic builds**
 
 ### Simplicity
+
 - **Single tool** for version + dependency management
 - **No virtual environment activation** needed
 - **Automatic Python installation** if needed
@@ -64,12 +72,14 @@ uv sync --all-extras
 ## Development Workflow
 
 ### Installing Dependencies
+
 ```bash
 # Install dev dependencies
 uv sync --group dev
 ```
 
 ### Running Commands
+
 ```bash
 # Use uv run (no activation needed)
 uv run pytest
@@ -82,6 +92,7 @@ source .venv/bin/activate  # Linux/macOS
 ```
 
 ### Adding Dependencies
+
 ```bash
 # Add to pyproject.toml
 uv add fastapi uvicorn
@@ -103,6 +114,7 @@ uv remove requests
 ## Next Steps
 
 1. **Uninstall pyenv** (optional):
+
    ```bash
    # Remove pyenv installation
    rm -rf ~/.pyenv
@@ -118,10 +130,12 @@ uv remove requests
 ## Troubleshooting
 
 ### Common Issues
+
 - **"uv not found"**: Install uv first (`pip install uv`)
 - **"Python 3.12 not found"**: uv will install it automatically
 - **"Virtual env not activated"**: Use `uv run` or manually activate
 
 ### IDE Setup
+
 - **VS Code**: Select `.venv/bin/python` as interpreter
 - **PyCharm**: Point to `.venv/bin/python` in project settings

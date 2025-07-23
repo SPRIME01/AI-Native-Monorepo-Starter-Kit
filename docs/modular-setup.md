@@ -1,22 +1,26 @@
 # Modular Setup Guide
 
 ## Overview
+
 The AI-Native Monorepo now supports modular installation, allowing you to install only what you need when you need it. This keeps installations lightweight and fast.
 
 ## Quick Start
 
 ### 1. Core Setup (Lightweight)
+
 ```bash
 # Install only essentials (ruff, mypy, pytest, pre-commit)
 just setup
 ```
 
 **Includes:**
+
 - Essential development tools (ruff, mypy, pre-commit)
 - Basic testing (pytest, pytest-cov)
 - Utilities (python-dotenv, uv)
 
 ### 2. Component Installation
+
 ```bash
 # Add AI/ML capabilities
 just setup-ai
@@ -41,6 +45,7 @@ just setup-supabase
 ```
 
 ### 3. Full Installation
+
 ```bash
 # Install everything at once
 just setup-full
@@ -49,6 +54,7 @@ just setup-full
 ## Available Components
 
 ### 🤖 AI/ML (`just setup-ai`)
+
 - **PyTorch** - Deep learning framework
 - **Transformers** - Hugging Face transformers
 - **Scikit-learn** - Machine learning library
@@ -58,6 +64,7 @@ just setup-full
 - **Wandb** - Experiment tracking
 
 ### ☁️ Cloud (`just setup-cloud`)
+
 - **Docker** - Containerization
 - **Kubernetes** - Container orchestration
 - **Ansible** - Infrastructure automation
@@ -67,6 +74,7 @@ just setup-full
 - **Pulumi** - Infrastructure as code
 
 ### 📊 Analytics (`just setup-analytics`)
+
 - **Pandas** - Data manipulation
 - **NumPy** - Numerical computing
 - **Matplotlib/Seaborn** - Data visualization
@@ -76,18 +84,21 @@ just setup-full
 - **Polars** - Fast DataFrames
 
 ### 🛠️ Development (`just setup-dev`)
+
 - **Extended testing** (pytest-mock, pytest-xdist, hypothesis)
 - **Security tools** (bandit, safety)
 - **Coverage reporting** (coverage)
 - **CLI tools** (typer, rich)
 
 ### 🗄️ Database (`just setup-database`)
+
 - **PostgreSQL** (psycopg2-binary, SQLModel)
 - **Redis** - In-memory database
 - **MongoDB** (pymongo)
 - **Alembic** - Database migrations
 
 ### 🌐 Web/API (`just setup-web`)
+
 - **FastAPI** - Modern web framework
 - **Uvicorn** - ASGI server
 - **Pydantic** - Data validation
@@ -97,6 +108,7 @@ just setup-full
 ## Usage Examples
 
 ### Scenario 1: Web API Development
+
 ```bash
 # Start with core
 just setup
@@ -112,6 +124,7 @@ just setup-dev
 ```
 
 ### Scenario 2: Machine Learning Project
+
 ```bash
 # Start with core
 just setup
@@ -127,6 +140,7 @@ just setup-cloud
 ```
 
 ### Scenario 3: Full-Stack Development
+
 ```bash
 # Install everything
 just setup-full
@@ -135,6 +149,7 @@ just setup-full
 ## Environment Management
 
 ### Clean Installation
+
 ```bash
 # Clean environment and reinstall core
 just reinstall
@@ -147,6 +162,7 @@ just clean-env
 ```
 
 ### Adding Components Later
+
 You can always add more components to an existing installation:
 
 ```bash
@@ -160,18 +176,22 @@ just setup-cloud
 ## Benefits
 
 ### 🚀 **Speed**
+
 - Core setup takes seconds instead of minutes
 - Only install what you need
 
 ### 💾 **Disk Space**
+
 - AI/ML packages can be 2-3GB
 - Core installation is < 100MB
 
 ### 🔧 **Flexibility**
+
 - Start minimal, grow as needed
 - Different team members can have different setups
 
 ### 🎯 **Purpose-Built**
+
 - Backend developers: `setup + setup-web + setup-database`
 - ML engineers: `setup + setup-ai + setup-analytics`
 - DevOps: `setup + setup-cloud + setup-dev`
