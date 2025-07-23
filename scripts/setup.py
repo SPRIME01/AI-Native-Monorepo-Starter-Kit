@@ -71,7 +71,7 @@ def init_python_env(python_version: str, rust_toolchain_uv_install: bool, root_p
         else:
             print(f"✅ Python {python_version} is available.")
     except subprocess.CalledProcessError:
-        print(f"⚠️ Warning: Could not check available Python versions. Proceeding with venv creation...")
+        print("⚠️ Warning: Could not check available Python versions. Proceeding with venv creation...")
 
     # Create/sync virtual environment with uv
     print("Creating virtual environment with uv...")
