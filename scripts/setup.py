@@ -86,9 +86,10 @@ def init_python_env(python_version: str, rust_toolchain_uv_install: bool, root_p
         sys.exit(1)
 
     # Sync dependencies based on profile
+    # Sync dependencies based on profile
     if profile == "core":
         print("Syncing core dependencies only...")
-        sync_dependencies(profile)
+        run_command(["uv", "sync"])
     elif profile == "full":
         print("Syncing all dependencies...")
         run_command(["uv", "sync", "--all-groups"])
