@@ -447,13 +447,17 @@ tree: # Pretty-print current workspace layout
 
 clean: # Clean build artifacts and caches (use with caution)
     @echo "🗑️ Cleaning Nx cache, node_modules, and Python environments..."
+    PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+    cd "$PROJECT_ROOT"
     {{NX}} reset
-    rm -rf node_modules .venv
-    find . -name ".nx" -type d -exec rm -rf {} + 2>/dev/null || true
-    find . -name "dist" -type d -exec rm -rf {} + 2>/dev/null || true
-    find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-    find . -name "*.pyc" -delete 2>/dev/null || true
-    find . -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
+    rm -rf "$PROJECT_ROOT/node_modules" "$PROJECT_ROOT/.venv"
+    find "$PROJECT_ROOT" -name ".nx" -type d -exec rm -rf {} + 2>/dev/null || true
+    find "$PROJECT_ROOT" -name "dist" -type d -exec rm -rf {} + 2>/dev/null || true
+    find "$PROJECT_ROOT" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    find "$PROJECT_ROOT" -name "*.pyc" -delete 2>/dev/null || true
+    find "$PROJECT_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
+    @echo "✅ Cleanup complete. You may need to run 'just setup' again."
+    find "$PROJECT_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
     @echo "✅ Cleanup complete. You may need to run 'just setup' again."
 
 # ==============================================================================
