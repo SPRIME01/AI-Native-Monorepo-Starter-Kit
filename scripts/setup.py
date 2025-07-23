@@ -212,23 +212,7 @@ def update_service_tags(ctx: str, deployable: str):
     if not os.path.exists(project_file):
         print(f"❌ libs/{ctx}/project.json not found.")
         sys.exit(1)
-        def _read_and_update_project_json(project_file: str, deployable: str) -> None:
-            """Read project.json, update deployable tags, and write back to file."""
-            with open(project_file, 'r') as f:
-                data = json.load(f)
-
-            # Initialize tags if not present
-            if 'tags' not in data:
-                data['tags'] = []
-
-            # Remove existing deployable tag
-            data['tags'] = [tag for tag in data['tags'] if not tag.startswith('deployable:')]
-
-            # Add new deployable tag
-            data['tags'].append(f'deployable:{deployable}')
-
-            with open(project_file, 'w') as f:
-                json.dump(data, f, indent=2)
+// (All of the lines shown in the original snippet have been removed, as the nested helper is unused.)
     try:
         with open(project_file, 'r') as f:
             data = json.load(f)
