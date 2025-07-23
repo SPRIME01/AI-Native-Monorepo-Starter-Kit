@@ -7,6 +7,7 @@
 
 # Cross-platform shell configuration
 set shell := ["bash", "-c"]
+set shell := if os() == "windows" { ["powershell.exe", "-c"] } else { ["bash", "-c"] }
 
 # Tool shortcuts and defaults
 NX := "npx nx"
@@ -137,7 +138,8 @@ help-setup: # Show available setup options
     @echo ""
     @echo "Component Installation:"
     @echo "  just setup-ai        - AI/ML tools (PyTorch, Transformers, Scikit-learn)"
-    @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Terraform)"
+    @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Pulumi)"
+    @echo "  just setup-cloud     - Cloud tools (Docker, Kubernetes, Pulumi)"
     @echo "  just setup-analytics - Analytics (Pandas, NumPy, Jupyter, Matplotlib)"
     @echo "  just setup-dev       - Development tools (Testing, Linting, Formatting)"
     @echo "  just setup-database  - Database tools (SQLModel, PostgreSQL, Redis)"
@@ -254,7 +256,8 @@ service-status: # Show deployment status of all contexts
         if [ -d "$$ctx_dir" ]; then \
             ctx=$$(basename "$$ctx_dir"); \
             if [ -f "$$ctx_dir/project.json" ]; then \
-                deployable=$$(grep -o '"deployable:[^"]*"' "$$ctx_dir/project.json" | cut -d: -f2 | tr -d '"' || echo "false"); \
+                deployable=$$(jq -r '.tags[]? | select(startswith("deployable:")) | split(":")[1]' "$$ctx_dir/project.json" 2>/dev/null || echo "false"); \
+                if [ -z "$$deployable" ]; then deployable="false"; fi; \
                 service_exists="❌"; \
                 if [ -d "apps/$$ctx-svc" ]; then service_exists="✅"; fi; \
                 printf "  %-20s deployable:%-8s service:%-3s\n" "$$ctx" "$$deployable" "$$service_exists"; \
@@ -408,14 +411,14 @@ service-logs CTX: # View service logs
     kubectl logs -l app={{CTX}}-svc --namespace={{NAMESPACE}} --tail=100 -f
 
 # ==============================================================================
-# Infrastructure as Code (IaC) - Terraform, Ansible, and Cloud
+# Infrastructure as Code (IaC) - Pulumi, Ansible, and Cloud
 # ==============================================================================
 
-infra-plan TARGET: # Run terraform plan
+infra-plan TARGET: # Run Pulumi plan
     @echo "🗺️ Running IaC plan for '{{TARGET}}'..."
     {{NX}} run infrastructure:plan-{{TARGET}}
 
-infra-apply TARGET: # Apply terraform changes
+infra-apply TARGET: # Apply Pulumi changes
     @echo "🚀 Applying IaC changes for '{{TARGET}}'..."
     {{NX}} run infrastructure:apply-{{TARGET}}
 
