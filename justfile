@@ -6,7 +6,6 @@
 # ╚═══════════════════════════════════════════════════════════════╝
 
 # Cross-platform shell configuration
-set shell := ["bash", "-c"]
 set shell := if os() == "windows" { ["powershell.exe", "-c"] } else { ["bash", "-c"] }
 
 # Tool shortcuts and defaults
