@@ -6,22 +6,23 @@
     "test": "nx test"
   },
   "devDependencies": {
-    "@nx/eslint": "^21.3.2",
-    "@nx/eslint-plugin": "^21.3.2",
-    "@nx/playwright": "^21.3.2",
-    "@nxlv/python": "^21.0.3",
+    "@nrwl/nx-cloud": "^19.1.0",
+    "@nx/eslint": "^21.3.4",
+    "@nx/eslint-plugin": "^21.3.4",
+    "@nx/playwright": "^21.3.4",
+    "@nxlv/python": "^21.0.4",
     "@playwright/test": "^1.54.1",
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "eslint": "^9.31.0",
-    "nx": "21.3.2",
-    "prettier": "^3.0.0",
-    "tslib": "^2.0.0",
-    "typescript": "^5.7.3"
+    "nx": "21.3.4",
+    "prettier": "^3.6.2",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.3",
+    "@supabase/supabase-js": "^2.52.1",
     "jsonc-parser": "^3.3.1"
   }
 }

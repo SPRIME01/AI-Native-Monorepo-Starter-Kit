@@ -9,15 +9,15 @@ from enum import Enum
 
 T = TypeVar('T')
 
-class TestDataType(Enum):
+class DataType(Enum):
     MINIMAL = "minimal"
     COMPLETE = "complete"
     INVALID = "invalid"
     EDGE_CASE = "edge_case"
 
 @dataclass
-class TestDataSpec:
-    data_type: TestDataType
+class DataSpec:
+    data_type: DataType
     overrides: Dict[str, Any] = None
     constraints: Dict[str, Any] = None
 
