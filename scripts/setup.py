@@ -65,7 +65,7 @@ def init_python_env(python_version: str, rust_toolchain_uv_install: bool, root_p
             print(f"   - Using uv: uv python install {python_version}")
             print(f"   - Using pyenv: pyenv install {python_version}")
             print(f"   - Or install from https://python.org")
-            print(f"Available Python versions:")
+            print("Available Python versions:")
             print(available_versions)
             sys.exit(1)
         else:
